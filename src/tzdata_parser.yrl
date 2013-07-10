@@ -29,6 +29,6 @@ group -> elements break group : ['$1' | '$3'].
 elements -> element : ['$1'].
 elements -> element elements : ['$1' | '$2'].
 
-element -> elem : element(3, '$1').
+element -> elem : list_to_binary(element(3, '$1')).
 
 Erlang code.
