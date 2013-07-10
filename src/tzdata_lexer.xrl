@@ -9,7 +9,7 @@
 Definitions.
 
 WS   = [\t\s]
-C    = [a-zA-Z0-9\_\->=:/\%]
+C    = [a-zA-Z0-9\_\->=:/%+]
 CR   = [\r]
 LF   = [\n]
 
@@ -18,6 +18,7 @@ Rules.
 Rule : { token, { rule, TokenLine } }.
 Zone : { token, { zone, TokenLine } }.
 Link : { token, { link, TokenLine } }.
+Leap : { token, { leap, TokenLine } }.
 
 {C}+ : { token, { elem, TokenLine, TokenChars } }.
 

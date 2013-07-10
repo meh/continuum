@@ -10,7 +10,7 @@ Nonterminals
   definitions definition elements element group.
 
 Terminals
-  rule link zone elem break.
+  rule link zone leap elem break.
 
 Rootsymbol
   definitions.
@@ -21,6 +21,7 @@ definitions -> definition definitions : [ '$1' | '$2'].
 definition -> rule elements break        : { rule, '$2' }.
 definition -> link element element break : { link, '$2', '$3' }.
 definition -> zone element group         : { zone, '$2', '$3' }.
+definition -> leap elements break        : { leap, '$2' }.
 
 group -> elements : '$1'.
 group -> elements break : '$1'.
