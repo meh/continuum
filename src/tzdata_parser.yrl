@@ -7,7 +7,7 @@
 % 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 Nonterminals
-  definitions definition string number year month day time
+  definitions definition string year month day time
   correction rs year_range type on at save letter zone_lines
   offset rules until newline.
 
@@ -22,7 +22,7 @@ definitions -> definition definitions : ['$1' | '$2'].
 
 definition ->
   rule string year_range type month on at save letter newline :
-    { rule, '$2', '$3', { '$5', '$6', '$7', '$8' }, '$9' }.
+    { rule, '$2', '$3', { '$5', '$6', '$7' }, '$8', '$9' }.
 
 definition ->
   link string string newline : { link, '$2', '$3' }.
@@ -39,9 +39,6 @@ newline -> break newline.
 
 string ->
   elem : list_to_binary(content('$1')).
-
-number ->
-  elem : list_to_integer(content('$1')).
 
 year ->
   elem : parse_year(content('$1')).
@@ -133,11 +130,19 @@ parse_day("lastSat") ->
 parse_day("lastSun") ->
   { last, sunday };
 parse_day(Day) ->
-  list_to_integer(Day).
+  case string:to_integer(Day) of
+    { error, _ } ->
+      list_to_binary(Day);
+
+    { Result, _ } ->
+      Result
+  end.
 
 parse_time(Time) when is_list(Time) ->
   parse_time(list_to_binary(Time));
 parse_time(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1, $::8, Second:16/binary-unit:1 >>) ->
+  { binary_to_integer(Hour), binary_to_integer(Minute), binary_to_integer(Second) };
+parse_time(<< Hour:8/binary-unit:1, $::8, Minute:16/binary-unit:1, $::8, Second:16/binary-unit:1 >>) ->
   { binary_to_integer(Hour), binary_to_integer(Minute), binary_to_integer(Second) };
 parse_time(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1 >>) ->
   { binary_to_integer(Hour), binary_to_integer(Minute), 0 };
@@ -154,6 +159,8 @@ parse_year_range(From, "only") ->
   list_to_integer(From);
 parse_year_range(From, "max") ->
   { list_to_integer(From), infinity };
+parse_year_range("min", To) ->
+  { infinity, list_to_integer(To) };
 parse_year_range(From, To) ->
   { list_to_integer(From), list_to_integer(To) }.
 
@@ -163,7 +170,7 @@ parse_type("-") ->
 parse_on(On) ->
   case string:to_integer(On) of
     { error, _ } ->
-      nil;
+      list_to_binary(On);
 
     { Result, _ } ->
       Result
@@ -189,14 +196,19 @@ parse_at_type("z") -> nautical.
 
 parse_save("0") ->
   { plus, { 0, 0, 0 } };
-parse_save([Hours, Minutes]) ->
-  { list_to_integer(Hours), list_to_integer(Minutes), 0 };
-parse_save([Hours, Minutes, Seconds]) ->
-  { list_to_integer(Hours), list_to_integer(Minutes), list_to_integer(Seconds) };
+parse_save("1") ->
+  { plus, { 1, 0, 0 } };
 parse_save([$- | Save]) ->
-  { minus, parse_save(string:tokens(Save, ":")) };
+  { minus, parse_save_split(string:tokens(Save, ":")) };
 parse_save(Save) ->
-  { plus, parse_save(string:tokens(Save, ":")) }.
+  { plus, parse_save_split(string:tokens(Save, ":")) }.
+
+parse_save_split([Hours]) ->
+  { list_to_integer(Hours), 0, 0 };
+parse_save_split([Hours, Minutes]) ->
+  { list_to_integer(Hours), list_to_integer(Minutes), 0 };
+parse_save_split([Hours, Minutes, Seconds]) ->
+  { list_to_integer(Hours), list_to_integer(Minutes), list_to_integer(Seconds) }.
 
 parse_letter("S") -> standard;
 parse_letter("D") -> daylight_saving;
