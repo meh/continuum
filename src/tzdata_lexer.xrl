@@ -15,17 +15,16 @@ LF   = [\n]
 
 Rules.
 
+{WS}+#.*({CR}?{LF})+ : { token, { break, TokenLine } }.
+#.*({CR}?{LF})+     : skip_token.
+({CR}?{LF})+         : { token, { break, TokenLine } }.
+{WS}+                : skip_token.
+
 Rule : { token, { rule, TokenLine } }.
 Zone : { token, { zone, TokenLine } }.
 Link : { token, { link, TokenLine } }.
 Leap : { token, { leap, TokenLine } }.
 
 {C}+ : { token, { elem, TokenLine, TokenChars } }.
-
-({CR}?{LF})+         : { token, { break, TokenLine } }.
-{WS}\#.*({CR}?{LF})+ : { token, { break, TokenLine } }.
-
-{WS}+             : skip_token.
-\#.*({CR}?{LF})+  : skip_token.
 
 Erlang code.
