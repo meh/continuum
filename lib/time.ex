@@ -9,6 +9,16 @@ defmodule Time do
     :calendar.now_to_datetime(:erlang.now) |> elem(1)
   end
 
+  def valid?({ hour, minute, second }) when hour   in 0 .. 23 and
+                                            minute in 0 .. 59 and
+                                            second in 0 .. 59 do
+    true
+  end
+
+  def valid?(_) do
+    false
+  end
+
   def from_epoch(seconds) do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
       |> :calendar.gregorian_seconds_to_datetime
