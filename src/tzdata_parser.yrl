@@ -149,8 +149,8 @@ parse_time(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1 >>) ->
 parse_time(<< Hour:8/binary-unit:1, $::8, Minute:16/binary-unit:1 >>) ->
   { binary_to_integer(Hour), binary_to_integer(Minute), 0 }.
 
-parse_correction("+") -> plus;
-parse_correction("-") -> minus.
+parse_correction("+") -> '+';
+parse_correction("-") -> '-'.
 
 parse_rs("S") -> stationary;
 parse_rs("R") -> rolling.
@@ -195,13 +195,13 @@ parse_at_type("g") -> greenwich;
 parse_at_type("z") -> nautical.
 
 parse_save("0") ->
-  { plus, { 0, 0, 0 } };
+  { '+', { 0, 0, 0 } };
 parse_save("1") ->
-  { plus, { 1, 0, 0 } };
+  { '+', { 1, 0, 0 } };
 parse_save([$- | Save]) ->
-  { minus, parse_save_split(string:tokens(Save, ":")) };
+  { '-', parse_save_split(string:tokens(Save, ":")) };
 parse_save(Save) ->
-  { plus, parse_save_split(string:tokens(Save, ":")) }.
+  { '+', parse_save_split(string:tokens(Save, ":")) }.
 
 parse_save_split([Hours]) ->
   { list_to_integer(Hours), 0, 0 };
