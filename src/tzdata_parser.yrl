@@ -218,7 +218,14 @@ parse_letter("-") -> none;
 parse_letter(_)   -> none.
 
 parse_rules("-")   -> nil;
-parse_rules(Rules) -> list_to_binary(Rules).
+parse_rules(Rules) ->
+  case string:to_integer(Rules) of
+    { error, _ } ->
+      list_to_binary(Rules);
+
+    { _, _ } ->
+      parse_time(Rules)
+  end.
 
 parse_until(Year, Month, Day, Time, Type) ->
   { parse_at_type(Type), { { parse_year(Year), parse_month(Month), parse_day(Day) },
