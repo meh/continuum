@@ -9,7 +9,7 @@
 Nonterminals
   definitions definition string year month day time
   correction rs year_range type on at save letter zone_lines
-  offset rules until newline.
+  offset rules format until newline.
 
 Terminals
   rule link zone leap elem break.
@@ -77,15 +77,18 @@ letter ->
   elem : parse_letter(content('$1')).
 
 zone_lines ->
-  offset rules string newline : [{ '$1', '$2', '$3', parse_until() }].
+  offset rules format newline : [{ '$1', '$2', '$3', parse_until() }].
 zone_lines ->
-  offset rules string until newline zone_lines : [{ '$1', '$2', '$3', '$4' } | '$6'].
+  offset rules format until newline zone_lines : [{ '$1', '$2', '$3', '$4' } | '$6'].
 
 offset ->
   elem : parse_save(content('$1')).
 
 rules ->
   elem : parse_rules(content('$1')).
+
+format ->
+  elem : parse_format(content('$1')).
 
 until ->
   elem elem elem elem : parse_until(content('$1'), content('$2'), content('$3'), content('$4')).
@@ -225,6 +228,16 @@ parse_rules(Rules) ->
 
     { _, _ } ->
       parse_time(Rules)
+  end.
+
+parse_format("zzz")  -> nil;
+parse_format(Format) ->
+  case string:tokens(Format, "%s") of
+    [Name] ->
+      list_to_binary(Name);
+
+    [Before, After] ->
+      { list_to_binary(Before), list_to_binary(After) }
   end.
 
 parse_until(Year, Month, Day, Time, Type) ->
