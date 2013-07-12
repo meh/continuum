@@ -105,4 +105,31 @@ defmodule DateTime do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
       |> :calendar.gregorian_seconds_to_datetime
   end
+
+  defmacro __using__(_opts) do
+    quote do
+      use Date
+      use Time
+
+      import DateTime, only: [is_datetime: 1, sigil_t: 2, sigil_T: 2]
+    end
+  end
+
+  defmacro is_datetime(var) do
+    quote do
+      (tuple_size(unquote(var)) == 2 and
+        (is_date(elem(unquote(var), 0)) and is_time(elem(unquote(var), 1))) or
+        (is_binary(elem(unquote(var), 0)) and
+          is_date(elem(elem(unquote(var), 1), 0)) and
+          is_time(elem(elem(unquote(var), 1), 1))))
+    end
+  end
+
+  def sigil_t(string, options) do
+
+  end
+
+  def sigil_T(string, options) do
+    sigil_t(string, options)
+  end
 end
