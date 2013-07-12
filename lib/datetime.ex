@@ -1,20 +1,88 @@
 defmodule DateTime do
-  @type t :: { Date.t, Time.t }
+  use Date
+  use Time
+
+  @type t :: { Date.t, Time.t } | { Timezone.t, { Date.t, Time.t } }
+
+  def valid?({ { _, _ }, { _, _, _ } }) do
+    false
+  end
+
+  def valid?({ { _, _, _ }, { _, _ } }) do
+    false
+  end
+
+  def valid?({ zone, { date, time } }) do
+    Timezone.exists?(zone) and Date.valid?(date) and Time.valid?(time)
+  end
+
+  def valid?({ date, time }) do
+    Date.valid?(date) and Time.valid?(time)
+  end
+
+  def new({ zone, date }) do
+    { zone, { date, { 0, 0, 0 } } }
+  end
+
+  def new({ _, _, _ } = date) do
+    { date, { 0, 0, 0 } }
+  end
+
+  def new({ _, _, _ } = date, { _, _, _ } = time) do
+    { date, time }
+  end
+
+  def new({ zone_a, date }, { zone_b, time }) do
+    unless Timezone.equal?(zone_a, zone_b) do
+      raise ArgumentError, message: "timezone mismatch between date and time"
+    end
+
+    { zone_a, { date, time } }
+  end
+
+  def new({ zone, date }, { _, _, _ } = time) do
+    { zone, { date, time } }
+  end
+
+  def new({ _, _, _ } = date, { zone, time }) do
+    { zone, { date, time } }
+  end
 
   def now do
     :calendar.now_to_datetime(:erlang.now)
+  end
+
+  def date({ zone, { date, _ } }) do
+    { zone, date }
   end
 
   def date({ date, _ }) do
     date
   end
 
+  def time({ zone, { _, time } }) do
+    { zone, time }
+  end
+
   def time({ _, time }) do
     time
   end
 
-  def valid?({ date, time }) do
-    Date.valid?(date) and Time.valid?(time)
+  def timezone({ _, { _, _ } }) do
+    "UTC"
+  end
+
+  def timezone({ zone, _ }) do
+    zone
+  end
+
+  # TODO: actually change the date and time
+  def timezone({ old, { _, _ } = datetime }, new) do
+    { new, datetime }
+  end
+
+  def timezone(datetime, new) do
+    { new, datetime }
   end
 
   def epoch do
@@ -22,6 +90,13 @@ defmodule DateTime do
   end
 
   def to_epoch(datetime) do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+
+    if datetime < epoch do
+      raise ArgumentError, message: "cannot convert a datetime less than 1970-1-1 00:00:00"
+    end
+
     :calendar.datetime_to_gregorian_seconds(datetime) -
       :calendar.datetime_to_gregorian_seconds(epoch)
   end
