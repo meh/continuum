@@ -28,4 +28,22 @@ defmodule Time do
       |> :calendar.gregorian_seconds_to_datetime
       |> elem(1)
   end
+
+  defmacro __using__(_opts) do
+    quote do
+      import Time, only: [is_time: 1]
+    end
+  end
+
+  defmacro is_time(var) do
+    quote do
+      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
+                                          elem(unquote(var), 1) in 0 .. 59 and
+                                          elem(unquote(var), 2) in 0 .. 59) or
+       (tuple_size(unquote(var)) == 2 and is_binary(elem(unquote(var), 0)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) in 0 .. 23 and
+                                                    elem(elem(unquote(var), 1), 1) in 0 .. 59 and
+                                                    elem(elem(unquote(var), 1), 2) in 0 .. 59))
+    end
+  end
 end
