@@ -56,11 +56,11 @@ date ->
 
 date ->
   number dash month dash number :
-    { content('$5'), parse_month('$3'), content('$1') }.
+    { content('$1'), parse_month('$3'), content('$5') }.
 
 date ->
   number dash number dash number :
-    { content('$5'), parse_month('$3'), content('$1') }.
+    { content('$1'), content('$3'), content('$5') }.
 
 date ->
   number slash month slash number :
@@ -68,7 +68,7 @@ date ->
 
 date ->
   number slash number slash number :
-    { content('$5'), parse_month('$3'), content('$1') }.
+    { content('$5'), content('$3'), content('$1') }.
 
 time_noon ->
   time noon : parse_time(content('$1'), content('$2')).
