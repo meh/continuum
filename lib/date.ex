@@ -43,4 +43,22 @@ defmodule Date do
     :calendar.datetime_to_gregorian_seconds({ date, { 0, 0, 0 } }) -
       :calendar.datetime_to_gregorian_seconds(DataTime.epoch)
   end
+
+  defmacro __using__(_opts) do
+    quote do
+      import Date, only: [is_date: 1]
+    end
+  end
+
+  defmacro is_date(var) do
+    quote do
+      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
+                                          elem(unquote(var), 1) in 1 .. 12 and
+                                          elem(unquote(var), 2) in 1 .. 32) or
+       (tuple_size(unquote(var)) == 2 and is_binary(elem(unquote(var), 0)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) > 0 and
+                                                    elem(elem(unquote(var), 1), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 1), 2) in 1 .. 31))
+    end
+  end
 end
