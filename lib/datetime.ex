@@ -126,7 +126,30 @@ defmodule DateTime do
   end
 
   def sigil_t(string, options) do
+    { :ok, lexed, _  } = binary_to_list(string) |> :datetime_lexer.string
+    { :ok, parsed }    = :datetime_parser.parse(lexed)
 
+    cond do
+      Enum.empty?(options) or (Enum.member?(options, ?d) and Enum.member?(options, ?t)) ->
+        parsed
+
+      Enum.member?(options, ?d) ->
+        if DateTime.valid?(parsed) do
+          DateTime.date(parsed)
+        else
+          parsed
+        end
+
+      Enum.member?(options, ?t) ->
+        if DateTime.valid?(parsed) do
+          DateTime.time(parsed)
+        else
+          parsed
+        end
+
+      true ->
+        raise ArgumentError, message: "#{inspect options} is not supported"
+    end
   end
 
   def sigil_T(string, options) do
