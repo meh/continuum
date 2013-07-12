@@ -12,7 +12,7 @@ Nonterminals
   offset rules format until newline.
 
 Terminals
-  rule link zone leap elem break.
+  rule link zone leap elem break '>' '<' '>=' '<='.
 
 Rootsymbol
   definitions.
@@ -65,7 +65,15 @@ type ->
   elem : parse_type(content('$1')).
 
 on ->
-  elem : parse_on(content('$1')).
+  elem '>' elem : { '>', parse_weekday(content('$1')), list_to_integer(content('$3')) }.
+on ->
+  elem '<' elem : { '<', parse_weekday(content('$1')), list_to_integer(content('$3')) }.
+on ->
+  elem '>=' elem : { '>=', parse_weekday(content('$1')), list_to_integer(content('$3')) }.
+on ->
+  elem '<=' elem : { '<=', parse_weekday(content('$1')), list_to_integer(content('$3')) }.
+on ->
+  elem : list_to_integer(content('$1')).
 
 at ->
   elem : parse_at(content('$1')).
@@ -169,15 +177,6 @@ parse_year_range(From, To) ->
 
 parse_type("-") ->
   nil.
-
-parse_on(On) ->
-  case string:to_integer(On) of
-    { error, _ } ->
-      list_to_binary(On);
-
-    { Result, _ } ->
-      Result
-  end.
 
 parse_at(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1, $::8, Second:16/binary-unit:1, Rest/binary >>) ->
   { parse_at_type(binary_to_list(Rest)), { binary_to_integer(Hour), binary_to_integer(Minute), binary_to_integer(Second) } };

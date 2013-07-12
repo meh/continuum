@@ -8,10 +8,10 @@
 
 Definitions.
 
-WS   = [\t\s]
-C    = [a-zA-Z0-9\_\->=:/%+]
-CR   = [\r]
-LF   = [\n]
+WS = [\t\s]
+CR = [\r]
+LF = [\n]
+C  = [a-zA-Z0-9\_\:/%+\-]
 
 Rules.
 
@@ -24,6 +24,11 @@ Rule : { token, { rule, TokenLine } }.
 Zone : { token, { zone, TokenLine } }.
 Link : { token, { link, TokenLine } }.
 Leap : { token, { leap, TokenLine } }.
+
+>= : { token, { '>=', TokenLine } }.
+<= : { token, { '<=', TokenLine } }.
+>  : { token, { '>', TokenLine } }.
+<  : { token, { '<', TokenLine } }.
 
 {C}+ : { token, { elem, TokenLine, TokenChars } }.
 
