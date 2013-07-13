@@ -5,6 +5,7 @@ defmodule Time do
 
   @type t :: { hour, minute, second } | { Timezone.t, { hour, minute, second } }
 
+  @spec valid?(t) :: boolean
   def valid?({ hour, minute, second }) when hour   in 0 .. 23 and
                                             minute in 0 .. 59 and
                                             second in 0 .. 59 do
@@ -19,10 +20,51 @@ defmodule Time do
     false
   end
 
-  def now do
-    :calendar.now_to_datetime(:erlang.now) |> elem(1)
+  @spec now             :: t
+  @spec now(Timezone.t) :: t
+  def now(zone // "UTC") do
+    :calendar.now_to_datetime(:erlang.now) |> elem(1) |> timezone(zone)
   end
 
+  @spec hour(t) :: hour
+  def hour({ _, time }),    do: hour(time)
+  def hour({ hour, _, _ }), do: hour
+
+  @spec minute(t) :: minute
+  def minute({ _, time }),      do: minute(time)
+  def minute({ _, minute, _ }), do: minute
+
+  @spec second(t) :: second
+  def second({ _, time }),      do: second(time)
+  def second({ _, _, second }), do: second
+
+  @spec timezone(t) :: Timezone.t
+  def timezone({ _, _, _ }) do
+    "UTC"
+  end
+
+  def timezone({ zone, _ }) do
+    zone
+  end
+
+  @spec timezone(t, Timezone.t) :: t
+  def timezone({ _old, time }, new) do
+    if Timezone.equal? new, "UTC" do
+      time
+    else
+      { new, time }
+    end
+  end
+
+  def timezone(time, new) do
+    if Timezone.equal? new, "UTC" do
+      time
+    else
+      { new, time }
+    end
+  end
+
+  @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
       |> :calendar.gregorian_seconds_to_datetime
@@ -35,6 +77,7 @@ defmodule Time do
     end
   end
 
+  @spec is_time(term) :: boolean
   defmacro is_time(var) do
     quote do
       ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
@@ -47,6 +90,7 @@ defmodule Time do
     end
   end
 
+  @spec is_time(term, Timezone.t) :: boolean
   defmacro is_time(var, zone) when is_binary(zone) do
     if Timezone.equal? zone, "UTC" do
       quote do
