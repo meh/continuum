@@ -55,10 +55,8 @@ defmodule Time do
                                            elem(unquote(var), 2) in 0 .. 59)
       end
     else
-      zones = Timezone.synonyms_for zone
-
       quote do
-        (tuple_size(unquote(var)) == 2 and elem(unquote(var), 0) in unquote(zones) and
+        (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 0), unquote(zone)) and
           tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) in 0 .. 23 and
                                                      elem(elem(unquote(var), 1), 1) in 0 .. 59 and
                                                      elem(elem(unquote(var), 1), 2) in 0 .. 59)
