@@ -96,6 +96,12 @@ defmodule Timezone do
     end
   end
 
+  @names Enum.map(@zones, fn z -> z.name end) ++ Enum.map(@links, fn l -> l.to end)
+
+  def names do
+    @names
+  end
+
   Enum.each @zones, fn zone ->
     name = zone.name
     zone = Macro.escape(zone)
@@ -131,4 +137,24 @@ defmodule Timezone do
   def link_to(_),         do: nil
   def link?(_),           do: false
   def synonyms_for(_, _), do: nil
+
+  defmacro __using__(_opts) do
+    quote do
+      import Timezone, only: [is_timezone: 1, is_timezone: 2]
+    end
+  end
+
+  defmacro is_timezone(zone) do
+    quote do
+      unquote(zone) in unquote(@names)
+    end
+  end
+
+  defmacro is_timezone(zone, name) when is_binary(name) do
+    zones = Timezone.synonyms_for name
+
+    quote do
+      unquote(zone) in unquote(zones)
+    end
+  end
 end
