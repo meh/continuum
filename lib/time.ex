@@ -31,7 +31,7 @@ defmodule Time do
 
   defmacro __using__(_opts) do
     quote do
-      import Time, only: [is_time: 1]
+      import Time, only: [is_time: 1, is_time: 2]
     end
   end
 
@@ -44,6 +44,25 @@ defmodule Time do
          tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) in 0 .. 23 and
                                                     elem(elem(unquote(var), 1), 1) in 0 .. 59 and
                                                     elem(elem(unquote(var), 1), 2) in 0 .. 59))
+    end
+  end
+
+  defmacro is_time(var, zone) when is_binary(zone) do
+    if Timezone.equal? zone, "UTC" do
+      quote do
+        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
+                                           elem(unquote(var), 1) in 0 .. 59 and
+                                           elem(unquote(var), 2) in 0 .. 59)
+      end
+    else
+      zones = Timezone.synonyms_for zone
+
+      quote do
+        (tuple_size(unquote(var)) == 2 and elem(unquote(var), 0) in unquote(zones) and
+          tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) in 0 .. 23 and
+                                                     elem(elem(unquote(var), 1), 1) in 0 .. 59 and
+                                                     elem(elem(unquote(var), 1), 2) in 0 .. 59)
+      end
     end
   end
 end
