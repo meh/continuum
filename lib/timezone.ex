@@ -7,8 +7,6 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Timezone do
-  use DateTime
-
   @type t :: String.t
 
   @db Path.join(["..", "..", "priv", "tzdata"]) |> Path.expand(__FILE__)
@@ -68,9 +66,7 @@ defmodule Timezone do
         @links Link.new from: from, to: to
 
       { :zone, name, rules } ->
-        IO.inspect name
-
-        { rules, _ } = Enum.reduce rules, { [], %t"0-1-1 00:00:00" }, fn
+        { rules, _ } = Enum.reduce rules, { [], { :local, {{0,1,1},{0,0,0}} } }, fn
           { offset, rules, format, until }, { result, last } ->
             rules = cond do
               is_binary(rules) ->
@@ -90,8 +86,6 @@ defmodule Timezone do
             { [rule | result], until }
         end
 
-        IO.puts "\n"
-
         @zones Zone.new name: name, rules: Enum.reverse(rules)
 
       { :rule, name, for, { month, day, at }, save, type } ->
@@ -106,18 +100,35 @@ defmodule Timezone do
     name = zone.name
     zone = Macro.escape(zone)
 
-    def :get,     [name], [], do: quote(do: unquote(zone))
-    def :exists?, [name], [], do: true
+    def :get,     [name],       [], do: quote(do: unquote(zone))
+    def :exists?, [name],       [], do: true
+    def :equal?,  [name, name], [], do: true
   end
 
   Enum.each @links, fn link ->
-    def :get,     [link.to], [], do: quote(do: get(unquote(link.from)))
-    def :link_to, [link.to], [], do: quote(do: unquote(link.from))
-    def :exists?, [link.to], [], do: true
-    def :link?,   [link.to], [], do: true
+    def :get,     [link.to],            [], do: quote(do: get(unquote(link.from)))
+    def :exists?, [link.to],            [], do: true
+    def :equal?,  [link.to, link.from], [], do: true
+    def :equal?,  [link.to, link.to],   [], do: true
+    def :equal?,  [link.from, link.to], [], do: true
+    def :link_to, [link.to],            [], do: quote(do: unquote(link.from))
+    def :link?,   [link.to],            [], do: true
   end
 
-  def exists?(_), do: false
-  def link_to(_), do: nil
-  def link?(_),   do: false
+  # define synonyms
+  Enum.reduce(@links, HashDict.new, fn link, acc ->
+    Dict.update(acc, link.from, [], [link.to | &1])
+  end) |> Enum.each(fn { name, links } ->
+    synonyms = [name | links]
+
+    Enum.each synonyms, fn name ->
+      def :synonyms_for, [name], [], do: synonyms
+    end
+  end)
+
+  def exists?(_),         do: false
+  def equal?(_, _),       do: false
+  def link_to(_),         do: nil
+  def link?(_),           do: false
+  def synonyms_for(_, _), do: nil
 end
