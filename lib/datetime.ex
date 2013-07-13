@@ -111,7 +111,7 @@ defmodule DateTime do
       use Date
       use Time
 
-      import DateTime, only: [is_datetime: 1, sigil_t: 2, sigil_T: 2]
+      import DateTime, only: [is_datetime: 1, is_datetime: 2, sigil_t: 2, sigil_T: 2]
     end
   end
 
@@ -122,6 +122,24 @@ defmodule DateTime do
         (is_binary(elem(unquote(var), 0)) and
           is_date(elem(elem(unquote(var), 1), 0)) and
           is_time(elem(elem(unquote(var), 1), 1))))
+    end
+  end
+
+  defmacro is_datetime(var, zone) when is_binary(zone) do
+    if Timezone.equal? zone, "UTC" do
+      quote do
+        (tuple_size(unquote(var)) == 2 and
+          (is_date(elem(unquote(var), 0), unquote(zone)) and
+          is_time(elem(unquote(var), 1), unquote(zone))))
+      end
+    else
+      zones = Timezone.synonyms_for zone
+
+      quote do
+        (elem(unquote(var), 0) in unquote(zones) and
+          is_date(elem(elem(unquote(var), 1), 0)) and
+          is_time(elem(elem(unquote(var), 1), 1)))
+      end
     end
   end
 
