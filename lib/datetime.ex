@@ -133,10 +133,8 @@ defmodule DateTime do
           is_time(elem(unquote(var), 1), unquote(zone))))
       end
     else
-      zones = Timezone.synonyms_for zone
-
       quote do
-        (elem(unquote(var), 0) in unquote(zones) and
+        (is_timezone(elem(unquote(var), 0), unquote(zone)) and
           is_date(elem(elem(unquote(var), 1), 0)) and
           is_time(elem(elem(unquote(var), 1), 1)))
       end
