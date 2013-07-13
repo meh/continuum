@@ -73,7 +73,7 @@ on ->
 on ->
   elem '<=' elem : { '<=', parse_weekday(content('$1')), list_to_integer(content('$3')) }.
 on ->
-  elem : list_to_integer(content('$1')).
+  elem : parse_on(content('$1')).
 
 at ->
   elem : parse_at(content('$1')).
@@ -100,6 +100,8 @@ format ->
 
 until ->
   elem elem elem elem : parse_until(content('$1'), content('$2'), content('$3'), content('$4')).
+until ->
+  elem elem elem '>=' elem elem : parse_until(content('$1'), content('$2'), { content('$3'), '>=', content('$5') }, content('$6')).
 until ->
   elem elem elem : parse_until(content('$1'), content('$2'), content('$3')).
 until ->
@@ -178,6 +180,11 @@ parse_year_range(From, To) ->
 parse_type("-") ->
   nil.
 
+parse_on([$l, $a, $s, $t | WeekDay]) ->
+  { last, parse_weekday(WeekDay) };
+parse_on(Day) ->
+  list_to_integer(Day).
+
 parse_at(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1, $::8, Second:16/binary-unit:1, Rest/binary >>) ->
   { parse_at_type(binary_to_list(Rest)), { binary_to_integer(Hour), binary_to_integer(Minute), binary_to_integer(Second) } };
 parse_at(<< Hour:16/binary-unit:1, $::8, Minute:16/binary-unit:1, Rest/binary >>) ->
@@ -232,6 +239,9 @@ parse_rules(Rules) ->
 parse_format("zzz")  -> nil;
 parse_format(Format) ->
   case string:tokens(Format, "%s") of
+    [] ->
+      { <<>>, <<>> };
+
     [Name] ->
       list_to_binary(Name);
 
@@ -239,6 +249,9 @@ parse_format(Format) ->
       { list_to_binary(Before), list_to_binary(After) }
   end.
 
+parse_until(Year, Month, { WeekDay, Comp, Number }, Time, Type) ->
+  { parse_at_type(Type), { { parse_year(Year), parse_month(Month), { parse_weekday(WeekDay), Comp, list_to_integer(Number) } },
+                           parse_time(Time) } };
 parse_until(Year, Month, Day, Time, Type) ->
   { parse_at_type(Type), { { parse_year(Year), parse_month(Month), parse_day(Day) },
                            parse_time(Time) } }.
@@ -254,6 +267,9 @@ parse_until(Year, Month, Day, Time) ->
       parse_until(Year, Month, Day, Time, "")
   end.
 
+parse_until(Year, Month, { WeekDay, Comp, Number }) ->
+  { local, { { parse_year(Year), parse_month(Month), { parse_weekday(WeekDay), Comp, list_to_integer(Number) } },
+             { 0, 0, 0 } } };
 parse_until(Year, Month, Day) ->
   { local, { { parse_year(Year), parse_month(Month), parse_day(Day) }, { 0, 0, 0 } } }.
 
