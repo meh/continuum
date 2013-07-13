@@ -46,7 +46,7 @@ defmodule Date do
 
   defmacro __using__(_opts) do
     quote do
-      import Date, only: [is_date: 1]
+      import Date, only: [is_date: 1, is_date: 2]
     end
   end
 
@@ -59,6 +59,25 @@ defmodule Date do
          tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) > 0 and
                                                     elem(elem(unquote(var), 1), 1) in 1 .. 12 and
                                                     elem(elem(unquote(var), 1), 2) in 1 .. 31))
+    end
+  end
+
+  defmacro is_date(var, zone) when is_binary(zone) do
+    if Timezone.equal? zone, "UTC" do
+      quote do
+        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
+                                           elem(unquote(var), 1) in 1 .. 12 and
+                                           elem(unquote(var), 2) in 1 .. 32)
+      end
+    else
+      zones = Timezone.synonyms_for zone
+
+      quote do
+       (tuple_size(unquote(var)) == 2 and elem(unquote(var), 0) in unquote(zones) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) > 0 and
+                                                    elem(elem(unquote(var), 1), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 1), 2) in 1 .. 31)
+      end
     end
   end
 end
