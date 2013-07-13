@@ -4,6 +4,7 @@ defmodule DateTime do
 
   @type t :: { Date.t, Time.t } | { Timezone.t, { Date.t, Time.t } }
 
+  @spec valid?(t) :: boolean
   def valid?({ { _, _ }, { _, _, _ } }) do
     false
   end
@@ -20,6 +21,7 @@ defmodule DateTime do
     Date.valid?(date) and Time.valid?(time)
   end
 
+  @spec new(Date.t) :: t
   def new({ zone, date }) do
     { zone, { date, { 0, 0, 0 } } }
   end
@@ -28,6 +30,7 @@ defmodule DateTime do
     { date, { 0, 0, 0 } }
   end
 
+  @spec new(Date.t, Time.t) :: t
   def new({ _, _, _ } = date, { _, _, _ } = time) do
     { date, time }
   end
@@ -48,16 +51,28 @@ defmodule DateTime do
     { zone, { date, time } }
   end
 
-  def now do
-    :calendar.now_to_datetime(:erlang.now)
+  @spec now             :: t
+  @spec now(Timezone.t) :: t
+  def now(zone // "UTC") do
+    :calendar.now_to_datetime(:erlang.now) |> timezone(zone)
   end
 
+  @spec date(t) :: Date.t
   def date({ zone, { date, _ } }) do
     { zone, date }
   end
 
   def date({ date, _ }) do
     date
+  end
+
+  @spec date(t, Date.t) :: t
+  def date({ zone, { _old, time } }, new) do
+    { zone, { new, time } }
+  end
+
+  def date({ _old, time }, new) when is_date(new, "UTC") do
+    { new, time }
   end
 
   def time({ zone, { _, time } }) do
@@ -68,6 +83,7 @@ defmodule DateTime do
     time
   end
 
+  @spec timezone(t) :: Timezone.t
   def timezone({ _, { _, _ } }) do
     "UTC"
   end
@@ -77,18 +93,29 @@ defmodule DateTime do
   end
 
   # TODO: actually change the date and time
-  def timezone({ old, { _, _ } = datetime }, new) do
-    { new, datetime }
+  @spec timezone(t, Timezone.t) :: t
+  def timezone({ _old, { _, _ } = datetime }, new) do
+    if Timezone.equal? new, "UTC" do
+      datetime
+    else
+      { new, datetime }
+    end
   end
 
   def timezone(datetime, new) do
-    { new, datetime }
+    if Timezone.equal? new, "UTC" do
+      datetime
+    else
+      { new, datetime }
+    end
   end
 
+  @spec epoch :: t
   def epoch do
     { { 1970, 1, 1 }, { 0, 0, 0 } }
   end
 
+  @spec to_epoch(t) :: non_neg_integer
   def to_epoch(datetime) do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
@@ -101,6 +128,7 @@ defmodule DateTime do
       :calendar.datetime_to_gregorian_seconds(epoch)
   end
 
+  @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
       |> :calendar.gregorian_seconds_to_datetime
@@ -115,6 +143,7 @@ defmodule DateTime do
     end
   end
 
+  @spec is_datetime(term) :: boolean
   defmacro is_datetime(var) do
     quote do
       (tuple_size(unquote(var)) == 2 and
@@ -125,6 +154,7 @@ defmodule DateTime do
     end
   end
 
+  @spec is_datetime(term, Timezone.t) :: boolean
   defmacro is_datetime(var, zone) when is_binary(zone) do
     if Timezone.equal? zone, "UTC" do
       quote do
@@ -141,6 +171,7 @@ defmodule DateTime do
     end
   end
 
+  @spec sigil_t(String.t, [?d | ?t]) :: t
   def sigil_t(string, options) do
     { :ok, lexed, _  } = binary_to_list(string) |> :datetime_lexer.string
     { :ok, parsed }    = :datetime_parser.parse(lexed)
@@ -168,6 +199,7 @@ defmodule DateTime do
     end
   end
 
+  @spec sigil_T(String.t, [?d | ?t]) :: t
   def sigil_T(string, options) do
     sigil_t(string, options)
   end
