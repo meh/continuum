@@ -4,14 +4,14 @@ defmodule Date do
   @type day   :: 1 .. 31
   @type week  :: 1 .. 53
 
-  @type t :: { year, month, day } | { Timezone.t, { year, month, day } }
+  @type t :: { year, month, day } | { { year, month, day }, Timezone.t }
 
   @spec valid?(t) :: boolean
   def valid?({ year, month, day }) do
     :calendar.valid_date(year, month, day)
   end
 
-  def valid?({ zone, { year, month, day } }) do
+  def valid?({ { year, month, day }, zone }) do
     Timezone.exists?(zone) and :calendar.valid_date(year, month, day)
   end
 
@@ -22,15 +22,15 @@ defmodule Date do
   end
 
   @spec year(t) :: year
-  def year({ _, time }),    do: year(time)
+  def year({ date, _ }),    do: year(date)
   def year({ year, _, _ }), do: year
 
   @spec month(t) :: month
-  def month({ _, time }),     do: month(time)
+  def month({ date, _ }),     do: month(date)
   def month({ _, month, _ }), do: month
 
   @spec day(t) :: day
-  def day({ _, time }),   do: day(time)
+  def day({ date, _ }),   do: day(date)
   def day({ _, _, day }), do: day
 
   @spec timezone(t) :: Timezone.t
@@ -38,13 +38,13 @@ defmodule Date do
     "UTC"
   end
 
-  def timezone({ zone, _ }) do
+  def timezone({ _, zone }) do
     zone
   end
 
   # TODO: actually do the date change
   @spec timezone(t, Timezone.t) :: t
-  def timezone({ _old, date }, new) do
+  def timezone({ date, _old }, new) do
     if Timezone.equal? new, "UTC" do
       date
     else
@@ -56,7 +56,7 @@ defmodule Date do
     if Timezone.equal? new, "UTC" do
       date
     else
-      { new, date }
+      { date, new }
     end
   end
 
@@ -95,10 +95,10 @@ defmodule Date do
       ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
                                           elem(unquote(var), 1) in 1 .. 12 and
                                           elem(unquote(var), 2) in 1 .. 32) or
-       (tuple_size(unquote(var)) == 2 and is_binary(elem(unquote(var), 0)) and
-         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) > 0 and
-                                                    elem(elem(unquote(var), 1), 1) in 1 .. 12 and
-                                                    elem(elem(unquote(var), 1), 2) in 1 .. 31))
+       (tuple_size(unquote(var)) == 2 and is_binary(elem(unquote(var), 1)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
+                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31))
     end
   end
 
@@ -112,10 +112,10 @@ defmodule Date do
       end
     else
       quote do
-       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 0), unquote(zone)) and
-         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 1), 0) > 0 and
-                                                    elem(elem(unquote(var), 1), 1) in 1 .. 12 and
-                                                    elem(elem(unquote(var), 1), 2) in 1 .. 31)
+       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
+                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31)
       end
     end
   end
