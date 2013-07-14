@@ -172,18 +172,37 @@ defmodule DateTime do
   end
 
   @spec sigil_t(String.t, [?d | ?t | ?f]) :: t
-  defmacro sigil_t({ _, _, [string] }, 'f') do
-    if string |> is_binary do
-      string = binary_to_list(string)
-    end
-
-    { :ok, lexed, _ } = :datetime_format_lexer.string(string)
-    { :ok, parsed }   = :datetime_format_parser.parse(lexed)
-
-    Macro.escape({ :parsed, parsed })
+  defmacro sigil_t({ _, _, [string] }, 'f') when is_binary(string) do
+    Macro.escape parse_format(string)
   end
 
-  defmacro sigil_t({ _, _, [string] }, options) do
+  defmacro sigil_t(string, 'f') do
+    quote do
+      DateTime.parse_format(unquote(string))
+    end
+  end
+
+  defmacro sigil_t({ _, _, [string] }, options) when is_binary(string) do
+    Macro.escape parse_datetime(string, options)
+  end
+
+  defmacro sigil_t(string, options) do
+    quote do
+      DateTime.parse_datetime(unquote(string), unquote(options))
+    end
+  end
+
+  @spec sigil_T(String.t, [?d | ?t | ?f]) :: t
+  defmacro sigil_T({ _, _, [string] }, 'f') when is_binary(string) do
+    Macro.escape parse_format(string)
+  end
+
+  defmacro sigil_T({ _, _, [string] }, options) when is_binary(string) do
+    Macro.escape parse_datetime(string, options)
+  end
+
+  @doc false
+  def parse_datetime(string, options) do
     if string |> is_binary do
       string = binary_to_list(string)
     end
@@ -211,13 +230,18 @@ defmodule DateTime do
 
       true ->
         raise ArgumentError, message: "#{inspect options} is not supported"
-    end |> Macro.escape
+    end
   end
 
-  @spec sigil_T(String.t, [?d | ?t | ?f]) :: t
-  defmacro sigil_T(string, options) do
-    quote do
-      sigil_t(unquote(string), unquote(options))
+  @doc false
+  def parse_format(string) do
+    if string |> is_binary do
+      string = binary_to_list(string)
     end
+
+    { :ok, lexed, _ } = :datetime_format_lexer.string(string)
+    { :ok, parsed }   = :datetime_format_parser.parse(lexed)
+
+    { :parsed, parsed }
   end
 end
