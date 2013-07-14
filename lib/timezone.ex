@@ -98,6 +98,7 @@ defmodule Timezone do
 
   @names Enum.map(@zones, fn z -> z.name end) ++ Enum.map(@links, fn l -> l.to end)
 
+  @spec names :: [t]
   def names do
     @names
   end
@@ -152,12 +153,14 @@ defmodule Timezone do
     end
   end
 
+  @spec is_timezone(term) :: boolean
   defmacro is_timezone(zone) do
     quote do
       unquote(zone) in unquote(@names)
     end
   end
 
+  @spec is_timezone(term, t) :: boolean
   defmacro is_timezone(zone, name) when is_binary(name) do
     zones = Timezone.synonyms_for name
 
