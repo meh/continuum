@@ -122,15 +122,23 @@ defmodule Timezone do
   end
 
   # define synonyms
-  Enum.reduce(@links, HashDict.new, fn link, acc ->
+  linked_names = Enum.reduce @links, HashDict.new, fn link, acc ->
     Dict.update(acc, link.from, [], [link.to | &1])
-  end) |> Enum.each(fn { name, links } ->
+  end
+
+  Enum.each linked_names, fn { name, links } ->
     synonyms = [name | links]
 
     Enum.each synonyms, fn name ->
       def :synonyms_for, [name], [], do: synonyms
     end
-  end)
+  end
+
+  Enum.each @zones, fn zone ->
+    unless Dict.has_key?(linked_names, zone.name) do
+      def :synonyms_for, [zone.name], [], do: [zone.name]
+    end
+  end
 
   def exists?(_),         do: false
   def equal?(_, _),       do: false
