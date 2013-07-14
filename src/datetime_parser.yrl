@@ -16,13 +16,13 @@ Rootsymbol
   datetime.
 
 datetime ->
-  day_name date time_noon string : { content('$4'), { '$2', '$3' } }.
+  day_name date time_noon string : { { '$2', '$3' }, content('$4') }.
 
 datetime ->
-  day_name date string : { content('$3'), '$2' }.
+  day_name date string : { '$2', content('$3') }.
 
 datetime ->
-  day_name time_noon string : { content('$3'), '$2' }.
+  day_name time_noon string : { '$2', content('$3') }.
 
 datetime ->
   day_name date : '$2'.
@@ -31,13 +31,13 @@ datetime ->
   day_name time_noon : '$2'.
 
 datetime ->
-  date time_noon string : { content('$3'), { '$1', '$2' } }.
+  date time_noon string : { { '$1', '$2' }, content('$3') }.
 
 datetime ->
-  date string : { content('$2'), '$1' }.
+  date string : { '$1', content('$2') }.
 
 datetime ->
-  time_noon string : { content('$2'), '$1' }.
+  time_noon string : { '$1', content('$2') }.
 
 datetime ->
   date time_noon : { '$1', '$2' }.
