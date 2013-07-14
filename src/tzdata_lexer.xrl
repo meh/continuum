@@ -16,7 +16,7 @@ C  = [a-zA-Z0-9\_\:/%+\-]
 Rules.
 
 {WS}+#.*({CR}?{LF})+ : { token, { break, TokenLine } }.
-#.*({CR}?{LF})+     : skip_token.
+#.*({CR}?{LF})+      : skip_token.
 ({CR}?{LF})+         : { token, { break, TokenLine } }.
 {WS}+                : skip_token.
 
