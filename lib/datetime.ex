@@ -171,9 +171,24 @@ defmodule DateTime do
     end
   end
 
-  @spec sigil_t(String.t, [?d | ?t]) :: t
-  def sigil_t(string, options) do
-    { :ok, lexed, _  } = binary_to_list(string) |> :datetime_lexer.string
+  @spec sigil_t(String.t, [?d | ?t | ?f]) :: t
+  defmacro sigil_t({ _, _, [string] }, 'f') do
+    if string |> is_binary do
+      string = binary_to_list(string)
+    end
+
+    { :ok, lexed, _ } = :datetime_format_lexer.string(string)
+    { :ok, parsed }   = :datetime_format_parser.parse(lexed)
+
+    Macro.escape({ :parsed, parsed })
+  end
+
+  defmacro sigil_t({ _, _, [string] }, options) do
+    if string |> is_binary do
+      string = binary_to_list(string)
+    end
+
+    { :ok, lexed, _  } = :datetime_lexer.string(string)
     { :ok, parsed }    = :datetime_parser.parse(lexed)
 
     cond do
@@ -196,11 +211,13 @@ defmodule DateTime do
 
       true ->
         raise ArgumentError, message: "#{inspect options} is not supported"
-    end
+    end |> Macro.escape
   end
 
-  @spec sigil_T(String.t, [?d | ?t]) :: t
-  def sigil_T(string, options) do
-    sigil_t(string, options)
+  @spec sigil_T(String.t, [?d | ?t | ?f]) :: t
+  defmacro sigil_T(string, options) do
+    quote do
+      sigil_t(unquote(string), unquote(options))
+    end
   end
 end
