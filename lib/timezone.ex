@@ -147,6 +147,19 @@ defmodule Timezone do
   def link?(_),           do: false
   def synonyms_for(_, _), do: nil
 
+  def local do
+    now       = :erlang.now
+    universal = :calendar.now_to_universal_time(now) |> DateTime.to_epoch
+    local     = :calendar.now_to_local_time(now) |> DateTime.to_epoch
+    offset    = local - universal
+
+    if offset >= 0 do
+      { :+, Time.new(seconds: offset) }
+    else
+      { :-, Time.new(seconds: -offset) }
+    end
+  end
+
   defmacro __using__(_opts) do
     quote do
       import Timezone, only: [is_timezone: 1, is_timezone: 2]
