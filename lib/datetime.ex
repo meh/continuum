@@ -13,7 +13,7 @@ defmodule DateTime do
     false
   end
 
-  def valid?({ zone, { date, time } }) do
+  def valid?({ { date, time }, zone }) do
     Timezone.exists?(zone) and Date.valid?(date) and Time.valid?(time)
   end
 
@@ -22,8 +22,8 @@ defmodule DateTime do
   end
 
   @spec new(Date.t) :: t
-  def new({ zone, date }) do
-    { zone, { date, { 0, 0, 0 } } }
+  def new({ date, zone }) do
+    { { date, { 0, 0, 0 } }, zone }
   end
 
   def new({ _, _, _ } = date) do
@@ -35,20 +35,20 @@ defmodule DateTime do
     { date, time }
   end
 
-  def new({ zone_a, date }, { zone_b, time }) do
+  def new({ date, zone_a }, { time, zone_b }) do
     unless Timezone.equal?(zone_a, zone_b) do
       raise ArgumentError, message: "timezone mismatch between date and time"
     end
 
-    { zone_a, { date, time } }
+    { { date, time }, zone_a }
   end
 
-  def new({ zone, date }, { _, _, _ } = time) do
-    { zone, { date, time } }
+  def new({ date, zone }, { _, _, _ } = time) do
+    { { date, time }, zone }
   end
 
-  def new({ _, _, _ } = date, { zone, time }) do
-    { zone, { date, time } }
+  def new({ _, _, _ } = date, { time, zone }) do
+    { { date, time }, zone }
   end
 
   @spec now             :: t
@@ -58,8 +58,8 @@ defmodule DateTime do
   end
 
   @spec date(t) :: Date.t
-  def date({ zone, { date, _ } }) do
-    { zone, date }
+  def date({ { date, _ }, zone }) do
+    { date, zone }
   end
 
   def date({ date, _ }) do
@@ -67,16 +67,16 @@ defmodule DateTime do
   end
 
   @spec date(t, Date.t) :: t
-  def date({ zone, { _old, time } }, new) do
-    { zone, { new, time } }
+  def date({ { _old, time }, zone }, new) do
+    { { new, time }, zone }
   end
 
   def date({ _old, time }, new) when is_date(new, "UTC") do
     { new, time }
   end
 
-  def time({ zone, { _, time } }) do
-    { zone, time }
+  def time({ { _, time }, zone }) do
+    { time, zone }
   end
 
   def time({ _, time }) do
@@ -84,21 +84,21 @@ defmodule DateTime do
   end
 
   @spec timezone(t) :: Timezone.t
-  def timezone({ _, { _, _ } }) do
-    "UTC"
+  def timezone({ { _, _ }, zone }) do
+    zone
   end
 
-  def timezone({ zone, _ }) do
-    zone
+  def timezone(_) do
+    "UTC"
   end
 
   # TODO: actually change the date and time
   @spec timezone(t, Timezone.t) :: t
-  def timezone({ _old, { _, _ } = datetime }, new) do
+  def timezone({ { _, _ } = datetime, _old }, new) do
     if Timezone.equal? new, "UTC" do
       datetime
     else
-      { new, datetime }
+      { datetime, new }
     end
   end
 
@@ -106,7 +106,7 @@ defmodule DateTime do
     if Timezone.equal? new, "UTC" do
       datetime
     else
-      { new, datetime }
+      { datetime, new }
     end
   end
 
@@ -148,9 +148,9 @@ defmodule DateTime do
     quote do
       (tuple_size(unquote(var)) == 2 and
         (is_date(elem(unquote(var), 0)) and is_time(elem(unquote(var), 1))) or
-        (is_binary(elem(unquote(var), 0)) and
-          is_date(elem(elem(unquote(var), 1), 0)) and
-          is_time(elem(elem(unquote(var), 1), 1))))
+        (is_binary(elem(unquote(var), 1)) and
+          is_date(elem(elem(unquote(var), 0), 0)) and
+          is_time(elem(elem(unquote(var), 0), 1))))
     end
   end
 
@@ -164,9 +164,9 @@ defmodule DateTime do
       end
     else
       quote do
-        (is_timezone(elem(unquote(var), 0), unquote(zone)) and
-          is_date(elem(elem(unquote(var), 1), 0)) and
-          is_time(elem(elem(unquote(var), 1), 1)))
+        (is_timezone(elem(unquote(var), 1), unquote(zone)) and
+          is_date(elem(elem(unquote(var), 0), 0)) and
+          is_time(elem(elem(unquote(var), 0), 1)))
       end
     end
   end
