@@ -78,6 +78,24 @@ defmodule Time do
     end
   end
 
+  @spec seconds_from_midnight(t) :: non_neg_integer
+  def seconds_from_midnight({ time, _ }) do
+    seconds_from_midnight(time)
+  end
+
+  def seconds_from_midnight(time) do
+    :calendar.datetime_to_gregorian_seconds({ { 0, 1, 1 }, time })
+  end
+
+  @spec to_seconds(t) :: non_neg_integer
+  def to_seconds({ time, _ }) do
+    to_seconds(time)
+  end
+
+  def to_seconds({ hour, minute, second }) do
+    hour * 60 * 60 + minute * 60 + second
+  end
+
   @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
