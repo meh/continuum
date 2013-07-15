@@ -160,6 +160,10 @@ defmodule Timezone do
     end
   end
 
+  def offset(zone, datetime) do
+    { :+, { 0, 0, 0 } }
+  end
+
   defmacro __using__(_opts) do
     quote do
       import Timezone, only: [is_timezone: 1, is_timezone: 2]
