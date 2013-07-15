@@ -1,8 +1,10 @@
 defmodule Date do
-  @type year  :: non_neg_integer
-  @type month :: 1 .. 12
-  @type day   :: 1 .. 31
-  @type week  :: 1 .. 53
+  @type year    :: non_neg_integer
+  @type month   :: 1 .. 12
+  @type day     :: 1 .. 31
+  @type week    :: 1 .. 53
+  @type weekday :: 1 .. 7
+  @type yearday :: 1 .. 366
 
   @type t :: { year, month, day } | { { year, month, day }, Timezone.t }
 
@@ -58,6 +60,63 @@ defmodule Date do
     else
       { date, new }
     end
+  end
+
+  @spec day_of_the_year(t) :: yearday
+  def day_of_the_year({ date, _ }) do
+    day_of_the_year(date)
+  end
+
+  def day_of_the_year({ year, month, day }) do
+    begins = :calendar.date_to_gregorian_days(year, 1, 1)
+    ends   = :calendar.date_to_gregorian_days(year, month, day)
+
+    ends - begins
+  end
+
+  @spec day_of_the_week(t) :: weekday
+  def day_of_the_week({ date, _ }) do
+    day_of_the_week(date)
+  end
+
+  def day_of_the_week({ year, month, day }) do
+    :calendar.day_of_the_week(year, month, day)
+  end
+
+  @spec week_number(t) :: week
+  def week_number({ date, _ }) do
+    week_number(date)
+  end
+
+  def week_number(date) do
+    :calendar.iso_week_number(date) |> elem(1)
+  end
+
+  @spec month_days(t) :: day
+  def month_days({ date, _ }) do
+    month_days(date)
+  end
+
+  def month_days({ year, month, _ }) do
+    :calendar.last_day_of_the_month(year, month)
+  end
+
+  @spec month_days(year, month) :: day
+  def month_days(year, month) do
+    :calendar.last_day_of_the_month(year, month)
+  end
+
+  @spec leap?(t | year) :: boolean
+  def leap?({ date, _ }) do
+    leap?(date)
+  end
+
+  def leap?({ year, _, _ }) do
+    leap?(year)
+  end
+
+  def leap?(year) do
+    :calendar.is_leap_year(year)
   end
 
   @spec from_epoch(non_neg_integer) :: t
