@@ -107,13 +107,17 @@ defmodule DateTime do
   end
 
   @doc false
-  def parse_format(string) do
+  def parse_format(string, type // :php) do
     if string |> is_binary do
       string = binary_to_list(string)
     end
 
-    { :ok, lexed, _ } = :datetime_format_lexer.string(string)
-    { :ok, parsed }   = :datetime_format_parser.parse(lexed)
+    { :ok, lexed, _ } = case type do
+      :php ->
+        :dt_format_php.string(string)
+    end
+
+    { :ok, parsed } = :dt_format.parse(lexed)
 
     parsed
   end
