@@ -38,13 +38,13 @@ defimpl Inspect, for: StopWatch.Elapsed do
   def inspect(StopWatch.Elapsed[microseconds: mcs], _opts) do
     cond do
       mcs >= 1_000_000 ->
-        to_binary :io_lib.format("~p seconds", [mcs / 1_000_000])
+        to_string :io_lib.format("~p seconds", [mcs / 1_000_000])
 
       mcs >= 1_000 ->
-        to_binary :io_lib.format("~p milliseconds", [mcs / 1_000])
+        to_string :io_lib.format("~p milliseconds", [mcs / 1_000])
 
       true ->
-        to_binary :io_lib.format("~p microseconds", [mcs])
+        to_string :io_lib.format("~p microseconds", [mcs])
     end
   end
 end
