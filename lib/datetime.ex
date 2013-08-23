@@ -77,7 +77,7 @@ defmodule DateTime do
   @doc false
   def parse_datetime(string, options) do
     if string |> is_binary do
-      string = binary_to_list(string)
+      string = String.to_char_list!(string)
     end
 
     { :ok, lexed, _  } = :datetime_lexer.string(string)
@@ -109,7 +109,7 @@ defmodule DateTime do
   @doc false
   def parse_format(string, type // :php) do
     if string |> is_binary do
-      string = binary_to_list(string)
+      string = String.to_char_list!(string)
     end
 
     { :ok, lexed, _ } = case type do
