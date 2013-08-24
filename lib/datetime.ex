@@ -1,11 +1,12 @@
 defmodule DateTime do
+  @type t :: { date :: Date.t, time :: Time.t } |
+             { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
+
   use Date
   use Time
 
-  @type t :: { Date.t, Time.t } | { Timezone.t, { Date.t, Time.t } }
-
   @doc """
-  Herp derp.
+  When using DateTime the guard macros and sigils will be imported.
   """
   defmacro __using__(_opts) do
     quote do
@@ -228,6 +229,9 @@ defmodule DateTime do
     end
   end
 
+  @doc """
+  Check if the DateTime is observing Daylight Saving Time.
+  """
   @spec dst?(t) :: boolean
   def dst?(datetime) do
     zone = timezone(datetime)
@@ -235,6 +239,9 @@ defmodule DateTime do
     false
   end
 
+  @doc """
+  Format the DateTime in function of the passed string format or parsed format.
+  """
   @spec format(t, String.t | list | tuple) :: String.t
   def format(datetime, format) when is_binary(format) do
     datetime |> format(parse_format(format))
