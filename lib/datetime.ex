@@ -456,7 +456,7 @@ defmodule DateTime do
   end
 
   def format(_, char) when is_integer(char) do
-    [char] |> list_to_binary
+    [char] |> iolist_to_binary
   end
 
   defp format(acc, datetime, [format | rest]) do
