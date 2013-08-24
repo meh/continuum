@@ -475,11 +475,60 @@ defmodule DateTime do
     integer_to_binary(number)
   end
 
+  @doc """
+  Substract the descriptor from the DateTime.
+  """
+  @spec minus(t, Keyword.t) :: t
+  def minus(datetime, descriptor) do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+    seconds  = to_seconds(datetime) - descriptor_to_seconds(descriptor)
+
+    from_seconds(seconds)
+  end
+
+  @doc """
+  Add the descriptor to the DateTime.
+  """
+  @spec plus(t, Keyword.t) :: t
+  def plus(datetime, descriptor) do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+    seconds  = to_seconds(datetime) + descriptor_to_seconds(descriptor)
+
+    from_seconds(seconds)
+  end
+
+  defp descriptor_to_seconds(descriptor) do
+    result = 0
+
+    if seconds = descriptor[:seconds] || descriptor[:second] do
+      result = result + seconds
+    end
+
+    if minutes = descriptor[:minutes] || descriptor[:minute] do
+      result = result + (minutes * 60)
+    end
+
+    if hours = descriptor[:hours] || descriptor[:hour] do
+      result = result + (hours * 60 * 60)
+    end
+
+    if days = descriptor[:days] || descriptor[:day] do
+      result = result + (days * 24 * 60 * 60)
+    end
+
+    result
+  end
+
   @spec epoch :: t
   def epoch do
     { { 1970, 1, 1 }, { 0, 0, 0 } }
   end
 
+  @doc """
+  Convert the DateTime to UNIX epoch time.
+  """
   @spec to_epoch(t) :: non_neg_integer
   def to_epoch(datetime) do
     zone     = timezone(datetime)
@@ -493,9 +542,31 @@ defmodule DateTime do
       :calendar.datetime_to_gregorian_seconds(epoch)
   end
 
+  @doc """
+  Convert UNIX epoch time to DateTime.
+  """
   @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
     (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
       |> :calendar.gregorian_seconds_to_datetime
+  end
+
+  @doc """
+  Convert the DateTime to seconds.
+  """
+  @spec to_seconds(t) :: integer
+  def to_seconds(datetime) do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+
+    :calendar.datetime_to_gregorian_seconds(datetime)
+  end
+
+  @doc """
+  Convert seconds to DateTime.
+  """
+  @spec from_seconds(integer) :: t
+  def from_seconds(seconds, timezone // "UTC") do
+    :calendar.gregorian_seconds_to_datetime(seconds)
   end
 end
