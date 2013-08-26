@@ -489,7 +489,7 @@ defmodule DateTime do
   def minus(datetime, descriptor) do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
-    seconds  = to_seconds(datetime) - descriptor_to_seconds(descriptor)
+    seconds  = to_seconds(datetime) - to_seconds(descriptor)
 
     from_seconds(seconds)
   end
@@ -501,31 +501,9 @@ defmodule DateTime do
   def plus(datetime, descriptor) do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
-    seconds  = to_seconds(datetime) + descriptor_to_seconds(descriptor)
+    seconds  = to_seconds(datetime) + to_seconds(descriptor)
 
     from_seconds(seconds)
-  end
-
-  defp descriptor_to_seconds(descriptor) do
-    result = 0
-
-    if seconds = descriptor[:seconds] || descriptor[:second] do
-      result = result + seconds
-    end
-
-    if minutes = descriptor[:minutes] || descriptor[:minute] do
-      result = result + (minutes * 60)
-    end
-
-    if hours = descriptor[:hours] || descriptor[:hour] do
-      result = result + (hours * 60 * 60)
-    end
-
-    if days = descriptor[:days] || descriptor[:day] do
-      result = result + (days * 24 * 60 * 60)
-    end
-
-    result
   end
 
   @spec epoch :: t
@@ -559,9 +537,31 @@ defmodule DateTime do
   end
 
   @doc """
-  Convert the DateTime to seconds.
+  Convert a DateTime or a descriptor to seconds.
   """
-  @spec to_seconds(t) :: integer
+  @spec to_seconds(Keyword.t | t) :: integer
+  def to_seconds(descriptor) when is_list(descriptor) do
+    result = 0
+
+    if seconds = descriptor[:seconds] || descriptor[:second] do
+      result = result + seconds
+    end
+
+    if minutes = descriptor[:minutes] || descriptor[:minute] do
+      result = result + (minutes * 60)
+    end
+
+    if hours = descriptor[:hours] || descriptor[:hour] do
+      result = result + (hours * 60 * 60)
+    end
+
+    if days = descriptor[:days] || descriptor[:day] do
+      result = result + (days * 24 * 60 * 60)
+    end
+
+    result
+  end
+
   def to_seconds(datetime) do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
