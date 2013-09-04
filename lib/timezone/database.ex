@@ -95,21 +95,20 @@ defmodule Timezone.Database do
 
   Enum.each @zones, fn zone ->
     name = zone.name
-    zone = Macro.escape(zone)
 
-    def :get,     [name],       [], do: quote(do: unquote(zone))
-    def :exists?, [name],       [], do: true
-    def :equal?,  [name, name], [], do: true
+    def get(unquote(name)), do: unquote(Macro.escape(zone))
+    def exists?(unquote(name)), do: true
+    def equal?(unquote(name), unquote(name)), do: true
   end
 
   Enum.each @links, fn link ->
-    def :get,     [link.to],            [], do: quote(do: get(unquote(link.from)))
-    def :exists?, [link.to],            [], do: true
-    def :equal?,  [link.to, link.from], [], do: true
-    def :equal?,  [link.to, link.to],   [], do: true
-    def :equal?,  [link.from, link.to], [], do: true
-    def :link_to, [link.to],            [], do: quote(do: unquote(link.from))
-    def :link?,   [link.to],            [], do: true
+    def get(unquote(link.to)), do: unquote(link.from) |> get
+    def exists?(unquote(link.to)), do: true
+    def equal?(unquote(link.to), unquote(link.to)), do: true
+    def equal?(unquote(link.to), unquote(link.from)), do: true
+    def equal?(unquote(link.from), unquote(link.to)), do: true
+    def link_to(unquote(link.to)), do: unquote(link.from)
+    def link?(unquote(link.to)), do: true
   end
 
   # define synonyms
@@ -121,13 +120,13 @@ defmodule Timezone.Database do
     synonyms = [name | links]
 
     Enum.each synonyms, fn name ->
-      def :synonyms_for, [name], [], do: synonyms
+      def synonyms_for(unquote(name)), do: unquote(synonyms)
     end
   end
 
   Enum.each @zones, fn zone ->
     unless Dict.has_key?(linked_names, zone.name) do
-      def :synonyms_for, [zone.name], [], do: [zone.name]
+      def synonyms_for(unquote(zone.name)), do: [unquote(zone.name)]
     end
   end
 
