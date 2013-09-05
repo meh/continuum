@@ -304,7 +304,7 @@ defmodule DateTime do
   end
 
   def format(datetime, :yearday) do
-    datetime |> date > Date.day_of_the_year |> integer_to_binary
+    datetime |> date |> Date.day_of_the_year |> integer_to_binary
   end
 
   def format(datetime, { :week, :number, :iso8601 }) do
