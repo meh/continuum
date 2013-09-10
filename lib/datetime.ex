@@ -483,27 +483,33 @@ defmodule DateTime do
   end
 
   @doc """
-  Substract the descriptor from the DateTime.
+  Subtract the descriptor or seconds from the DateTime.
   """
-  @spec minus(t, Keyword.t) :: t
-  def minus(datetime, descriptor) do
+  @spec minus(t, integer | Keyword.t) :: t
+  def minus(datetime, seconds) when seconds |> is_integer do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
-    seconds  = to_seconds(datetime) - to_seconds(descriptor)
 
-    from_seconds(seconds)
+    from_seconds(to_seconds(datetime) - seconds)
+  end
+
+  def minus(datetime, descriptor) do
+    minus(datetime, to_seconds(descriptor))
   end
 
   @doc """
-  Add the descriptor to the DateTime.
+  Add the descriptor or seconds to the DateTime.
   """
-  @spec plus(t, Keyword.t) :: t
-  def plus(datetime, descriptor) do
+  @spec plus(t, integer | Keyword.t) :: t
+  def plus(datetime, seconds) when seconds |> is_integer do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
-    seconds  = to_seconds(datetime) + to_seconds(descriptor)
 
-    from_seconds(seconds)
+    from_seconds(to_seconds(datetime) + seconds)
+  end
+
+  def plus(datetime, descriptor) do
+    plus(datetime, to_seconds(descriptor))
   end
 
   @spec epoch :: t
