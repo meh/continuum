@@ -56,11 +56,11 @@ date ->
 
 date ->
   number dash month dash number :
-    { content('$1'), parse_month('$3'), content('$5') }.
+    consider_date({ content('$1'), parse_month('$3'), content('$5') }).
 
 date ->
   number dash number dash number :
-    { content('$1'), content('$3'), content('$5') }.
+    consider_date({ content('$1'), content('$3'), content('$5') }).
 
 date ->
   number slash month slash number :
@@ -118,3 +118,8 @@ parse_time(Time, 'after') ->
     { Hour, Minute, Second } ->
       { Hour + 12, Minute, Second }
   end.
+
+consider_date({ A, Month, B }) when B > 31 ->
+  { B, Month, A };
+consider_date(Date) ->
+  Date.
