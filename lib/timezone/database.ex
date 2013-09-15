@@ -113,7 +113,7 @@ defmodule Timezone.Database do
 
   # define synonyms
   linked_names = Enum.reduce @links, HashDict.new, fn link, acc ->
-    Dict.update(acc, link.from, [], [link.to | &1])
+    Dict.update(acc, link.from, [], &[link.to | &1])
   end
 
   Enum.each linked_names, fn { name, links } ->
