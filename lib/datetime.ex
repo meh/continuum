@@ -140,6 +140,10 @@ defmodule DateTime do
     Date.valid?(date) and Time.valid?(time)
   end
 
+  def valid?(_) do
+    false
+  end
+
   @spec new(Date.t) :: t
   def new({ date, zone }) do
     { { date, { 0, 0, 0 } }, zone }
