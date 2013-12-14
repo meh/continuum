@@ -1,9 +1,11 @@
 defmodule DateTime do
+  use Date
+  use Time
+
   @type t :: { date :: Date.t, time :: Time.t } |
              { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
 
-  use Date
-  use Time
+  import Kernel, except: [<: 2, <=: 2, >: 2, >=: 2]
 
   @doc """
   When using DateTime the guard macros and sigils will be imported.
@@ -382,15 +384,15 @@ defmodule DateTime do
 
   def format(datetime, { :noon, :lowercase }) do
     case datetime |> time |> Time.hour do
-      hour when hour > 12  -> "pm"
-      hour when hour <= 12 -> "am"
+      hour when hour |> Kernel.> 12  -> "pm"
+      hour when hour |> Kernel.<= 12 -> "am"
     end
   end
 
   def format(datetime, { :noon, :uppercase }) do
     case datetime |> time |> Time.hour do
-      hour when hour > 12  -> "PM"
-      hour when hour <= 12 -> "AM"
+      hour when hour |> Kernel.> 12  -> "PM"
+      hour when hour |> Kernel.<= 12 -> "AM"
     end
   end
 
@@ -478,7 +480,7 @@ defmodule DateTime do
     Enum.reverse(acc) |> iolist_to_binary
   end
 
-  defp pad(number) when number < 10 do
+  defp pad(number) when number |> Kernel.< 10 do
     "0" <> integer_to_binary(number)
   end
 
@@ -529,7 +531,7 @@ defmodule DateTime do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    if datetime < epoch do
+    if datetime |> Kernel.< epoch do
       raise ArgumentError, message: "cannot convert a datetime less than 1970-1-1 00:00:00"
     end
 
@@ -585,5 +587,35 @@ defmodule DateTime do
   @spec from_seconds(integer) :: t
   def from_seconds(seconds, timezone // "UTC") do
     :calendar.gregorian_seconds_to_datetime(seconds)
+  end
+
+  Enum.each %w[< <= > >=]a, fn op ->
+    def unquote(op)(a, b) when a |> is_integer and b |> is_integer do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)(a, b) when a |> is_date and b |> is_date do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)(a, b) when a |> is_datetime and b |> is_datetime do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)(a, { b, _, _ }) when a |> is_integer do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)({ a, _, _ }, b) when b |> is_integer do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)({ _, _, _ } = a, { { _, _, _ } = b, { _, _, _ } }) do
+      a |> Kernel.unquote(op)(b)
+    end
+
+    def unquote(op)({ { _, _, _ } = a, { _, _, _ } }, { _, _, _ } = b) do
+      a |> Kernel.unquote(op)(b)
+    end
   end
 end
