@@ -589,33 +589,31 @@ defmodule DateTime do
     :calendar.gregorian_seconds_to_datetime(seconds)
   end
 
-  Enum.each %w[< <= > >=]a, fn op ->
-    def unquote(op)(a, b) when a |> is_integer and b |> is_integer do
-      a |> Kernel.unquote(op)(b)
-    end
+  def a < b do
+    normalize(a) |> Kernel.< normalize(b)
+  end
 
-    def unquote(op)(a, b) when a |> is_date and b |> is_date do
-      a |> Kernel.unquote(op)(b)
-    end
+  def a <= b do
+    normalize(a) |> Kernel.<= normalize(b)
+  end
 
-    def unquote(op)(a, b) when a |> is_datetime and b |> is_datetime do
-      a |> Kernel.unquote(op)(b)
-    end
+  def a > b do
+    normalize(a) |> Kernel.> normalize(b)
+  end
 
-    def unquote(op)(a, { b, _, _ }) when a |> is_integer do
-      a |> Kernel.unquote(op)(b)
-    end
+  def a >= b do
+    normalize(a) |> Kernel.>= normalize(b)
+  end
 
-    def unquote(op)({ a, _, _ }, b) when b |> is_integer do
-      a |> Kernel.unquote(op)(b)
-    end
+  defp normalize(value) when value |> is_integer do
+    { { value, 1, 1 }, { 0, 0, 0 } }
+  end
 
-    def unquote(op)({ _, _, _ } = a, { { _, _, _ } = b, { _, _, _ } }) do
-      a |> Kernel.unquote(op)(b)
-    end
+  defp normalize(value) when value |> is_date do
+    { value, { 0, 0, 0 } }
+  end
 
-    def unquote(op)({ { _, _, _ } = a, { _, _, _ } }, { _, _, _ } = b) do
-      a |> Kernel.unquote(op)(b)
-    end
+  defp normalize(value) when value |> is_datetime do
+    value
   end
 end
