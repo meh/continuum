@@ -1,5 +1,5 @@
 defmodule Timezone.Database do
-  @path Path.join(["..", "..", "..", "priv", "tzdata"]) |> Path.expand(__FILE__)
+  @path Path.join(["..", "..", "priv", "tzdata"]) |> Path.expand(__DIR__)
 
   defrecord Zone, name: nil, rules: [] do
     defrecord Rule, format: nil, offset: nil, during: nil, references: nil do
