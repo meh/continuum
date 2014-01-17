@@ -136,7 +136,7 @@ defmodule Date do
     end
 
     :calendar.datetime_to_gregorian_seconds({ date, { 0, 0, 0 } }) -
-      :calendar.datetime_to_gregorian_seconds(DataTime.epoch)
+      :calendar.datetime_to_gregorian_seconds(DateTime.epoch)
   end
 
   @doc """
