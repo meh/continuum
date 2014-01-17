@@ -93,6 +93,13 @@ defmodule Timezone.Database do
     @names
   end
 
+  @spec contains?(Timezone.t) :: boolean
+  defmacro contains?(name) do
+    quote do
+      unquote(name) in unquote(@names)
+    end
+  end
+
   Enum.each @zones, fn zone ->
     name = zone.name
 

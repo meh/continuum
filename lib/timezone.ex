@@ -16,13 +16,14 @@ defmodule Timezone do
   defmacro __using__(_opts) do
     quote do
       import Timezone, only: [is_timezone: 1, is_timezone: 2]
+      require Timezone.Database
     end
   end
 
   @spec is_timezone(term) :: boolean
   defmacro is_timezone(zone) do
     quote do
-      unquote(zone) in unquote(@names)
+      Timezone.Database.contains?(unquote(zone))
     end
   end
 
