@@ -110,7 +110,7 @@ defmodule DateTime do
   end
 
   @doc false
-  def parse_format(string, type // :php) do
+  def parse_format(string, type \\ :php) do
     if string |> is_binary do
       string = String.to_char_list!(string)
     end
@@ -178,7 +178,7 @@ defmodule DateTime do
 
   @spec now             :: t
   @spec now(Timezone.t) :: t
-  def now(zone // "UTC") do
+  def now(zone \\ "UTC") do
     :calendar.now_to_datetime(:erlang.now) |> timezone(zone)
   end
 
@@ -585,7 +585,7 @@ defmodule DateTime do
   Convert seconds to DateTime.
   """
   @spec from_seconds(integer) :: t
-  def from_seconds(seconds, timezone // "UTC") do
+  def from_seconds(seconds, timezone \\ "UTC") do
     :calendar.gregorian_seconds_to_datetime(seconds)
   end
 

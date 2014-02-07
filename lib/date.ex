@@ -19,7 +19,7 @@ defmodule Date do
 
   @spec now             :: t
   @spec now(Timezone.t) :: t
-  def now(zone // "UTC") do
+  def now(zone \\ "UTC") do
     :calendar.now_to_datetime(:erlang.now) |> elem(0) |> timezone(zone)
   end
 

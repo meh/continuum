@@ -20,7 +20,7 @@ defmodule Time do
     false
   end
 
-  def new(data, zone // "UTC") do
+  def new(data, zone \\ "UTC") do
     seconds = Keyword.get(data, :seconds, 0)
     seconds = seconds + (Keyword.get(data, :minutes, 0) * 60)
     seconds = seconds + (Keyword.get(data, :hours, 0) * 60 * 60)
@@ -36,7 +36,7 @@ defmodule Time do
 
   @spec now             :: t
   @spec now(Timezone.t) :: t
-  def now(zone // "UTC") do
+  def now(zone \\ "UTC") do
     :calendar.now_to_datetime(:erlang.now) |> elem(1) |> timezone(zone)
   end
 
