@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Download do
       # remove useless files
       rm tzdata-latest.tar.gz
       cd priv/tzdata
-      rm -f *.sh *.tab factory Makefile
+      rm -f *.sh *.tab factory Makefile README leap-seconds.list leapseconds.awk
     """
   end
 end
