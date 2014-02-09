@@ -5,7 +5,7 @@ defmodule DateTime do
   @type t :: { date :: Date.t, time :: Time.t } |
              { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
 
-  import Kernel, except: [<: 2, <=: 2, >: 2, >=: 2]
+  import Kernel, except: [<: 2, <=: 2, >: 2, >=: 2, +: 2, -: 2]
 
   @doc """
   When using DateTime the guard macros and sigils will be imported.
@@ -491,31 +491,31 @@ defmodule DateTime do
   @doc """
   Subtract the descriptor or seconds from the DateTime.
   """
-  @spec minus(t, integer | Keyword.t) :: t
-  def minus(datetime, seconds) when seconds |> is_integer do
+  @spec t - (integer | Keyword.t) :: t
+  def datetime - seconds when seconds |> is_integer do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    from_seconds(to_seconds(datetime) - seconds)
+    from_seconds(to_seconds(datetime) |> Kernel.- seconds)
   end
 
-  def minus(datetime, descriptor) do
-    minus(datetime, to_seconds(descriptor))
+  def datetime - descriptor do
+    datetime - to_seconds(descriptor)
   end
 
   @doc """
   Add the descriptor or seconds to the DateTime.
   """
-  @spec plus(t, integer | Keyword.t) :: t
-  def plus(datetime, seconds) when seconds |> is_integer do
+  @spec t + (integer | Keyword.t) :: t
+  def datetime + seconds when seconds |> is_integer do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    from_seconds(to_seconds(datetime) + seconds)
+    from_seconds(to_seconds(datetime) |> Kernel.+ seconds)
   end
 
-  def plus(datetime, descriptor) do
-    plus(datetime, to_seconds(descriptor))
+  def datetime + descriptor do
+    datetime + to_seconds(descriptor)
   end
 
   @spec epoch :: t
@@ -544,7 +544,7 @@ defmodule DateTime do
   """
   @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
-    (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) + seconds)
+    (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) |> Kernel.+ seconds)
       |> :calendar.gregorian_seconds_to_datetime
   end
 
@@ -556,19 +556,23 @@ defmodule DateTime do
     result = 0
 
     if seconds = descriptor[:seconds] || descriptor[:second] do
-      result = result + seconds
+      result = result |> Kernel.+ seconds
     end
 
     if minutes = descriptor[:minutes] || descriptor[:minute] do
-      result = result + (minutes * 60)
+      result = result |> Kernel.+ (minutes * 60)
     end
 
     if hours = descriptor[:hours] || descriptor[:hour] do
-      result = result + (hours * 60 * 60)
+      result = result |> Kernel.+ (hours * 60 * 60)
     end
 
     if days = descriptor[:days] || descriptor[:day] do
-      result = result + (days * 24 * 60 * 60)
+      result = result |> Kernel.+ (days * 24 * 60 * 60)
+    end
+
+    if weeks = descriptor[:weeks] || descriptor[:week] do
+      result = result |> Kernel.+ (weeks * 7 * 24 * 60 * 60)
     end
 
     result
