@@ -10,22 +10,22 @@ defmodule DateTest do
   end
 
   test "gets the proper year" do
-    assert %t"2013-10-23" |> Date.year == 2013
-    assert %t"2013-10-23 EST" |> Date.year == 2013
+    assert ~t"2013-10-23" |> Date.year == 2013
+    assert ~t"2013-10-23 EST" |> Date.year == 2013
   end
 
   test "gets the proper month" do
-    assert %t"2013-10-23" |> Date.month == 10
-    assert %t"2013-10-23 EST" |> Date.month == 10
+    assert ~t"2013-10-23" |> Date.month == 10
+    assert ~t"2013-10-23 EST" |> Date.month == 10
   end
 
   test "gets the proper day" do
-    assert %t"2013-10-23" |> Date.day == 23
-    assert %t"2013-10-23 EST" |> Date.day == 23
+    assert ~t"2013-10-23" |> Date.day == 23
+    assert ~t"2013-10-23 EST" |> Date.day == 23
   end
 
   test "gets the proper timezone" do
-    assert %t"2013-10-23" |> Date.timezone == "UTC"
-    assert %t"2013-10-23 EST" |> Date.timezone == "EST"
+    assert ~t"2013-10-23" |> Date.timezone == "UTC"
+    assert ~t"2013-10-23 EST" |> Date.timezone == "EST"
   end
 end

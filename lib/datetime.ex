@@ -457,11 +457,11 @@ defmodule DateTime do
   end
 
   def format(datetime, { :datetime, :iso8601 }) do
-    datetime |> format(%t"o-m-d\TH:i:sP"f)
+    datetime |> format(~t"o-m-d\TH:i:sP"f)
   end
 
   def format(datetime, { :datetime, :rfc2882 }) do
-    datetime |> format(%t"D, j M Y H:i:s O"f)
+    datetime |> format(~t"D, j M Y H:i:s O"f)
   end
 
   def format(datetime, :epoch) do
