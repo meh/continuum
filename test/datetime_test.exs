@@ -4,6 +4,14 @@ defmodule DateTimeTest do
   use ExUnit.Case
   use DateTime
 
+  test "is_datetime works" do
+    assert is_datetime({ { 1, 2, 3 }, { 1, 2, 3 } })
+    refute is_datetime({ { 1, 2, 3 }, { 1, 2, 70 } })
+
+    assert is_datetime({ { { 1, 2, 3 }, { 1, 2, 3 } }, "EST" })
+    refute is_datetime({ { { 1, 2, 3 }, { 1, 2, 3 } }, "HUE" })
+  end
+
   test "returns a proper datetime" do
     assert match?({ { _, _, _ }, { _, _, _ } }, DateTime.now)
     assert match?({ { { _, _, _ }, { _, _, _ } }, "EST" }, DateTime.now("EST"))

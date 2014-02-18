@@ -1,6 +1,7 @@
 defmodule DateTime do
   use Date
   use Time
+  use Timezone
 
   @type t :: { date :: Date.t, time :: Time.t } |
              { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
@@ -14,6 +15,7 @@ defmodule DateTime do
     quote do
       use Date
       use Time
+      use Timezone
 
       import DateTime, only: [is_datetime: 1, is_datetime: 2, sigil_t: 2, sigil_T: 2]
     end
@@ -24,7 +26,7 @@ defmodule DateTime do
     quote do
       (tuple_size(unquote(var)) == 2 and
         (is_date(elem(unquote(var), 0)) and is_time(elem(unquote(var), 1))) or
-        (is_binary(elem(unquote(var), 1)) and
+        (is_timezone(elem(unquote(var), 1)) and
           is_date(elem(elem(unquote(var), 0), 0)) and
           is_time(elem(elem(unquote(var), 0), 1))))
     end
