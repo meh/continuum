@@ -5,19 +5,43 @@ defmodule Time do
 
   @type t :: { hour, minute, second } | { { hour, minute, second }, Timezone.t }
 
-  @spec valid?(t) :: boolean
-  def valid?({ hour, minute, second }) when hour   in 0 .. 23 and
-                                            minute in 0 .. 59 and
-                                            second in 0 .. 59 do
-    true
+  defmacro __using__(_opts) do
+    quote do
+      use Timezone
+
+      import Time, only: [is_time: 1, is_time: 2]
+    end
   end
 
-  def valid?({ zone, time }) do
-    Timezone.exists?(zone) and valid?(time)
+  @spec is_time(term) :: boolean
+  defmacro is_time(var) do
+    quote do
+      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
+                                          elem(unquote(var), 1) in 0 .. 59 and
+                                          elem(unquote(var), 2) in 0 .. 59) or
+       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) in 0 .. 23 and
+                                                    elem(elem(unquote(var), 0), 1) in 0 .. 59 and
+                                                    elem(elem(unquote(var), 0), 2) in 0 .. 59))
+    end
   end
 
-  def valid?(_) do
-    false
+  @spec is_time(term, Timezone.t) :: boolean
+  defmacro is_time(var, zone) do
+    if zone |> Timezone.== "UTC" do
+      quote do
+        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
+                                           elem(unquote(var), 1) in 0 .. 59 and
+                                           elem(unquote(var), 2) in 0 .. 59)
+      end
+    else
+      quote do
+        (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
+          tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) in 0 .. 23 and
+                                                     elem(elem(unquote(var), 0), 1) in 0 .. 59 and
+                                                     elem(elem(unquote(var), 0), 2) in 0 .. 59)
+      end
+    end
   end
 
   def new(data, zone \\ "UTC") do
@@ -27,7 +51,7 @@ defmodule Time do
 
     time = { trunc(seconds / 60 / 60), trunc(rem(seconds, 60 * 60) / 60), rem(seconds, 60) }
 
-    if Timezone.equal? zone, "UTC" do
+    if zone |> Timezone.== "UTC" do
       time
     else
       { time, zone }
@@ -63,7 +87,7 @@ defmodule Time do
 
   @spec timezone(t, Timezone.t) :: t
   def timezone({ time, _old }, new) do
-    if Timezone.equal? new, "UTC" do
+    if new |> Timezone.== "UTC" do
       time
     else
       { time, new }
@@ -71,7 +95,7 @@ defmodule Time do
   end
 
   def timezone(time, new) do
-    if Timezone.equal? new, "UTC" do
+    if new |> Timezone.== "UTC" do
       time
     else
       { time, new }
