@@ -36,12 +36,12 @@ defmodule Timezone do
     end
   end
 
-  defdelegate exists?(timezone),       to: Timezone.Database
-  defdelegate get(timezone),           to: Timezone.Database
-  defdelegate equal?(timezone, other), to: Timezone.Database
-  defdelegate link_to(timezone),       to: Timezone.Database
-  defdelegate link?(timezone),         to: Timezone.Database
-  defdelegate synonyms_for(timezone),  to: Timezone.Database
+  defdelegate exists?(timezone),      to: Timezone.Database
+  defdelegate get(timezone),          to: Timezone.Database
+  defdelegate timezone == other,      to: Timezone.Database, as: :equals?
+  defdelegate link_to(timezone),      to: Timezone.Database
+  defdelegate link?(timezone),        to: Timezone.Database
+  defdelegate synonyms_for(timezone), to: Timezone.Database
 
   def local do
     now       = :erlang.now

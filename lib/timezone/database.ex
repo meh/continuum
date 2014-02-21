@@ -105,15 +105,15 @@ defmodule Timezone.Database do
 
     def get(unquote(name)), do: unquote(Macro.escape(zone))
     def exists?(unquote(name)), do: true
-    def equal?(unquote(name), unquote(name)), do: true
+    def equals?(unquote(name), unquote(name)), do: true
   end
 
   Enum.each @links, fn link ->
     def get(unquote(link.to)), do: unquote(link.from) |> get
     def exists?(unquote(link.to)), do: true
-    def equal?(unquote(link.to), unquote(link.to)), do: true
-    def equal?(unquote(link.to), unquote(link.from)), do: true
-    def equal?(unquote(link.from), unquote(link.to)), do: true
+    def equals?(unquote(link.to), unquote(link.to)), do: true
+    def equals?(unquote(link.to), unquote(link.from)), do: true
+    def equals?(unquote(link.from), unquote(link.to)), do: true
     def link_to(unquote(link.to)), do: unquote(link.from)
     def link?(unquote(link.to)), do: true
   end
@@ -138,7 +138,7 @@ defmodule Timezone.Database do
   end
 
   def exists?(_),      do: false
-  def equal?(_, _),    do: false
+  def equals?(_, _),   do: false
   def link_to(_),      do: nil
   def link?(_),        do: false
   def synonyms_for(_), do: nil
