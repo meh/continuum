@@ -1,12 +1,14 @@
 defmodule DateTime do
   use Date
   use Time
-  use Timezone
+
+  alias DateTime.Format, as: Format
 
   @type t :: { date :: Date.t, time :: Time.t } |
              { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
 
   import Kernel, except: [<: 2, <=: 2, >: 2, >=: 2, +: 2, -: 2]
+  alias Kernel, as: K
 
   @doc """
   When using DateTime the guard macros and sigils will be imported.
@@ -15,7 +17,6 @@ defmodule DateTime do
     quote do
       use Date
       use Time
-      use Timezone
 
       import DateTime, only: [is_datetime: 1, is_datetime: 2, sigil_t: 2, sigil_T: 2]
     end
@@ -33,8 +34,8 @@ defmodule DateTime do
   end
 
   @spec is_datetime(term, Timezone.t) :: boolean
-  defmacro is_datetime(var, zone) when is_binary(zone) do
-    if Timezone.equal? zone, "UTC" do
+  defmacro is_datetime(var, zone) do
+    if zone |> Timezone.== "UTC" do
       quote do
         (tuple_size(unquote(var)) == 2 and
           (is_date(elem(unquote(var), 0), unquote(zone)) and
@@ -51,36 +52,36 @@ defmodule DateTime do
 
   @spec sigil_t(String.t, [?d | ?t | ?f]) :: t
   defmacro sigil_t({ _, _, [string] }, 'f') when is_binary(string) do
-    Macro.escape parse_format(string)
+    Macro.escape Format.compile(string)
   end
 
   defmacro sigil_t(string, 'f') do
     quote do
-      DateTime.parse_format(unquote(string))
+      Format.compile(unquote(string))
     end
   end
 
   defmacro sigil_t({ _, _, [string] }, options) when is_binary(string) do
-    Macro.escape parse_datetime(string, options)
+    Macro.escape parse(string, options)
   end
 
   defmacro sigil_t(string, options) do
     quote do
-      DateTime.parse_datetime(unquote(string), unquote(options))
+      DateTime.parse(unquote(string), unquote(options))
     end
   end
 
   @spec sigil_T(String.t, [?d | ?t | ?f]) :: t
   defmacro sigil_T({ _, _, [string] }, 'f') when is_binary(string) do
-    Macro.escape parse_format(string)
+    Macro.escape Format.compile(string)
   end
 
   defmacro sigil_T({ _, _, [string] }, options) when is_binary(string) do
-    Macro.escape parse_datetime(string, options)
+    Macro.escape parse(string, options)
   end
 
   @doc false
-  def parse_datetime(string, options) do
+  def parse(string, options) do
     if string |> is_binary do
       string = String.to_char_list!(string)
     end
@@ -93,15 +94,15 @@ defmodule DateTime do
         parsed
 
       Enum.member?(options, ?d) ->
-        if DateTime.valid?(parsed) do
-          DateTime.date(parsed)
+        if parsed |> is_datetime do
+          parsed |> DateTime.date
         else
           parsed
         end
 
       Enum.member?(options, ?t) ->
-        if DateTime.valid?(parsed) do
-          DateTime.time(parsed)
+        if parsed |> is_datetime do
+          parsed |> DateTime.time
         else
           parsed
         end
@@ -109,43 +110,6 @@ defmodule DateTime do
       true ->
         raise ArgumentError, message: "#{inspect options} is not supported"
     end
-  end
-
-  @doc false
-  def parse_format(string, type \\ :php) do
-    if string |> is_binary do
-      string = String.to_char_list!(string)
-    end
-
-    { :ok, lexed, _ } = case type do
-      :php ->
-        :dt_format_php.string(string)
-    end
-
-    { :ok, parsed } = :dt_format.parse(lexed)
-
-    parsed
-  end
-
-  @spec valid?(t) :: boolean
-  def valid?({ { _, _ }, { _, _, _ } }) do
-    false
-  end
-
-  def valid?({ { _, _, _ }, { _, _ } }) do
-    false
-  end
-
-  def valid?({ { date, time }, zone }) do
-    Timezone.exists?(zone) and Date.valid?(date) and Time.valid?(time)
-  end
-
-  def valid?({ date, time }) do
-    Date.valid?(date) and Time.valid?(time)
-  end
-
-  def valid?(_) do
-    false
   end
 
   @spec new(Date.t) :: t
@@ -163,7 +127,7 @@ defmodule DateTime do
   end
 
   def new({ date, zone_a }, { time, zone_b }) do
-    unless Timezone.equal?(zone_a, zone_b) do
+    unless zone_a |> Timezone.== zone_b do
       raise ArgumentError, message: "timezone mismatch between date and time"
     end
 
@@ -178,10 +142,26 @@ defmodule DateTime do
     { { date, time }, zone }
   end
 
+  @spec from_local({ Date.t, Time.t }) :: t
+  def from_local(datetime) do
+    zone = Timezone.local
+
+    if zone |> Timezone.== "UTC" do
+      datetime
+    else
+      { datetime, zone }
+    end
+  end
+
   @spec now             :: t
   @spec now(Timezone.t) :: t
   def now(zone \\ "UTC") do
     :calendar.now_to_datetime(:erlang.now) |> timezone(zone)
+  end
+
+  @spec local :: t
+  def local do
+    now(Timezone.local)
   end
 
   @spec date(t) :: Date.t
@@ -198,7 +178,7 @@ defmodule DateTime do
     { { new, time }, zone }
   end
 
-  def date({ _old, time }, new) when is_date(new, "UTC") do
+  def date({ _old, time }, new) when new |> is_date("UTC") do
     { new, time }
   end
 
@@ -210,27 +190,37 @@ defmodule DateTime do
     time
   end
 
+  @doc """
+  Get the timezone.
+  """
   @spec timezone(t) :: Timezone.t
-  def timezone({ { _, _ }, zone }) do
-    zone
-  end
+  def timezone(self) when self |> is_datetime do
+    case self do
+      { { _, _ }, zone } ->
+        zone
 
-  def timezone(_) do
-    "UTC"
-  end
-
-  # TODO: actually change the date and time
-  @spec timezone(t, Timezone.t) :: t
-  def timezone({ { _, _ } = datetime, _old }, new) do
-    if Timezone.equal? new, "UTC" do
-      datetime
-    else
-      { datetime, new }
+      _ ->
+        "UTC"
     end
   end
 
-  def timezone(datetime, new) do
-    if Timezone.equal? new, "UTC" do
+  @doc """
+  Change the timezone.
+
+  TODO: actually do the date and time conversion
+  """
+  @spec timezone(t, Timezone.t) :: t
+  def timezone(self, new) when self |> is_datetime do
+    timezone = timezone(self)
+    datetime = case self do
+      { { _, _ } = datetime, _ } ->
+        datetime
+
+      datetime ->
+        datetime
+    end
+
+    if new |> Timezone.== "UTC" do
       datetime
     else
       { datetime, new }
@@ -239,6 +229,8 @@ defmodule DateTime do
 
   @doc """
   Check if the DateTime is observing Daylight Saving Time.
+
+  TODO: actually check it based on the timezone and time
   """
   @spec dst?(t) :: boolean
   def dst?(datetime) do
@@ -248,246 +240,44 @@ defmodule DateTime do
   end
 
   @doc """
-  Format the DateTime in function of the passed string format or parsed format.
+  Format the date.
   """
   @spec format(t, String.t | list | tuple) :: String.t
-  def format(datetime, format) when is_binary(format) do
-    datetime |> format(parse_format(format))
+  def format(datetime, format, type \\ :php)
+
+  def format(datetime, format, type) when format |> is_binary do
+    Format.format(datetime, Format.compile(format, type))
   end
 
-  def format(datetime, format) when is_list(format) do
-    format([], datetime, format)
+  def format(datetime, format, _type) do
+    Format.format(datetime, format)
   end
 
-  def format(datetime, { :day, :number, :padded }) do
-    datetime |> date |> Date.day |> pad
-  end
+  @spec parse!(String.t, String.t | list | tuple)           :: t | no_return
+  @spec parse!(String.t, String.t | list | tuple, Format.t) :: t | no_return
+  def parse!(string, format, type \\ :php) do
+    case parse(string, format, type) do
+      { :ok, { result, _rest } } ->
+        result
 
-  def format(datetime, { :weekday, :name, :short }) do
-    case datetime |> date |> Date.day_of_the_week do
-      1 -> "Mon"
-      2 -> "Tue"
-      3 -> "Wed"
-      4 -> "Thu"
-      5 -> "Fri"
-      6 -> "Sat"
-      7 -> "Sun"
+      { :error, message } ->
+        raise DateTime.ParseError, message: message
+
+      { result, _rest } ->
+        result
     end
   end
 
-  def format(datetime, { :day, :number }) do
-    datetime |> date |> Date.day |> integer_to_binary
+  @spec parse(String.t, String.t | list | tuple)           :: { :ok, t } | { :error, term }
+  @spec parse(String.t, String.t | list | tuple, Format.t) :: { :ok, t } | { :error, term }
+  def parse(string, format, type \\ :php)
+
+  def parse(string, format, type) when format |> is_binary do
+    Format.parse(string, Format.compile(format, type))
   end
 
-  def format(datetime, { :weekday, :name, :long }) do
-    case datetime |> date |> Date.day_of_the_week do
-      1 -> "Monday"
-      2 -> "Tuesday"
-      3 -> "Wednesday"
-      4 -> "Thursday"
-      5 -> "Friday"
-      6 -> "Saturday"
-      7 -> "Sunday"
-    end
-  end
-
-  def format(datetime, { :weekday, :number, :iso8601 }) do
-    datetime |> date |> Date.day_of_the_week |> integer_to_binary
-  end
-
-  def format(datetime, :suffix) do
-    case datetime |> date |> Date.day |> rem(10) do
-      1 -> "st"
-      2 -> "nd"
-      3 -> "rd"
-      _ -> "th"
-    end
-  end
-
-  def format(datetime, { :weekday, :number }) do
-    case datetime |> date |> Date.day_of_the_week do
-      7 -> "0"
-      n -> integer_to_binary(n)
-    end
-  end
-
-  def format(datetime, :yearday) do
-    datetime |> date |> Date.day_of_the_year |> integer_to_binary
-  end
-
-  def format(datetime, { :week, :number, :iso8601 }) do
-    datetime |> date |> Date.week_number |> integer_to_binary
-  end
-
-  def format(datetime, { :month, :name, :long }) do
-    case datetime |> date |> Date.month do
-      1  -> "January"
-      2  -> "February"
-      3  -> "March"
-      4  -> "April"
-      5  -> "May"
-      6  -> "June"
-      7  -> "July"
-      8  -> "August"
-      9  -> "September"
-      10 -> "October"
-      11 -> "November"
-      12 -> "December"
-    end
-  end
-
-  def format(datetime, { :month, :number, :padded }) do
-    datetime |> date |> Date.month |> pad
-  end
-
-  def format(datetime, { :month, :name, :short }) do
-    case datetime |> date |> Date.month do
-      1  -> "Jan"
-      2  -> "Feb"
-      3  -> "Mar"
-      4  -> "Apr"
-      5  -> "May"
-      6  -> "Jun"
-      7  -> "Jul"
-      8  -> "Aug"
-      9  -> "Sep"
-      10 -> "Oct"
-      11 -> "Nov"
-      12 -> "Dec"
-    end
-  end
-
-  def format(datetime, { :month, :number }) do
-    datetime |> date |> Date.month |> integer_to_binary
-  end
-
-  def format(datetime, { :month, :days }) do
-    datetime |> date |> Date.month_days |> integer_to_binary
-  end
-
-  def format(datetime, { :year, :leap }) do
-    case datetime |> date |> Date.leap? do
-      true  -> "1"
-      false -> "0"
-    end
-  end
-
-  def format(datetime, { :year, :number, :iso8601 }) do
-    datetime |> date |> Date.year |> integer_to_binary
-  end
-
-  def format(datetime, { :year, :number, :long }) do
-    datetime |> date |> Date.year |> integer_to_binary
-  end
-
-  def format(datetime, { :year, :number, :short }) do
-    datetime |> date |> Date.year |> rem(100) |> integer_to_binary
-  end
-
-  def format(datetime, { :noon, :lowercase }) do
-    case datetime |> time |> Time.hour do
-      hour when hour |> Kernel.> 12  -> "pm"
-      hour when hour |> Kernel.<= 12 -> "am"
-    end
-  end
-
-  def format(datetime, { :noon, :uppercase }) do
-    case datetime |> time |> Time.hour do
-      hour when hour |> Kernel.> 12  -> "PM"
-      hour when hour |> Kernel.<= 12 -> "AM"
-    end
-  end
-
-  def format(datetime, { :hour, 12 }) do
-    datetime |> time |> Time.hour |> rem(12) |> integer_to_binary
-  end
-
-  def format(datetime, { :hour, 24 }) do
-    datetime |> time |> Time.hour |> integer_to_binary
-  end
-
-  def format(datetime, { :hour, 12, :padded }) do
-    datetime |> time |> Time.hour |> rem(12) |> pad
-  end
-
-  def format(datetime, { :hour, 24, :padded }) do
-    datetime |> time |> Time.hour |> pad
-  end
-
-  def format(datetime, { :minute, :padded }) do
-    datetime |> time |> Time.minute |> pad
-  end
-
-  def format(datetime, { :second, :padded }) do
-    datetime |> time |> Time.second |> pad
-  end
-
-  def format(datetime, { :timezone, :long }) do
-    datetime |> timezone
-  end
-
-  def format(datetime, :daylight) do
-    case datetime |> dst? do
-      true  -> "1"
-      false -> "0"
-    end
-  end
-
-  def format(datetime, { :offset, :short }) do
-    case Timezone.offset("UTC", datetime) do
-      { sign, { hours, minutes, _ } } ->
-        atom_to_binary(sign) <> (hours |> pad) <> (minutes |> pad)
-    end
-  end
-
-  def format(datetime, { :offset, :long }) do
-    case Timezone.offset("UTC", datetime) do
-      { sign, { hours, minutes, _ } } ->
-        atom_to_binary(sign) <> (hours |> pad) <> ":" <>  (minutes |> pad)
-    end
-  end
-
-  def format(datetime, { :timezone, :short }) do
-    datetime |> timezone
-  end
-
-  def format(datetime, { :offset, :seconds }) do
-    case Timezone.offset("UTC", datetime) do
-      { sign, time } ->
-        atom_to_binary(sign) <> (Time.to_seconds(time) |> integer_to_binary)
-    end
-  end
-
-  def format(datetime, { :datetime, :iso8601 }) do
-    datetime |> format(~t"o-m-d\TH:i:sP"f)
-  end
-
-  def format(datetime, { :datetime, :rfc2882 }) do
-    datetime |> format(~t"D, j M Y H:i:s O"f)
-  end
-
-  def format(datetime, :epoch) do
-    datetime |> to_epoch |> integer_to_binary
-  end
-
-  def format(_, char) when is_integer(char) do
-    [char] |> iolist_to_binary
-  end
-
-  defp format(acc, datetime, [format | rest]) do
-    [format(datetime, format) | acc] |> format(datetime, rest)
-  end
-
-  defp format(acc, _, []) do
-    Enum.reverse(acc) |> iolist_to_binary
-  end
-
-  defp pad(number) when number |> Kernel.< 10 do
-    "0" <> integer_to_binary(number)
-  end
-
-  defp pad(number) do
-    integer_to_binary(number)
+  def parse(string, format, _type) do
+    Format.parse(string, format)
   end
 
   @doc """
@@ -498,7 +288,7 @@ defmodule DateTime do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    from_seconds(to_seconds(datetime) |> Kernel.- seconds)
+    from_seconds(to_seconds(datetime) |> K.- seconds)
   end
 
   def datetime - descriptor do
@@ -513,7 +303,7 @@ defmodule DateTime do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    from_seconds(to_seconds(datetime) |> Kernel.+ seconds)
+    from_seconds(to_seconds(datetime) |> K.+ seconds)
   end
 
   def datetime + descriptor do
@@ -533,11 +323,11 @@ defmodule DateTime do
     zone     = timezone(datetime)
     datetime = timezone(datetime, "UTC")
 
-    if datetime |> Kernel.< epoch do
+    if datetime |> K.< epoch do
       raise ArgumentError, message: "cannot convert a datetime less than 1970-1-1 00:00:00"
     end
 
-    :calendar.datetime_to_gregorian_seconds(datetime) -
+    :calendar.datetime_to_gregorian_seconds(datetime) |> K.-
       :calendar.datetime_to_gregorian_seconds(epoch)
   end
 
@@ -546,7 +336,7 @@ defmodule DateTime do
   """
   @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
-    (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) |> Kernel.+ seconds)
+    (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) |> K.+ seconds)
       |> :calendar.gregorian_seconds_to_datetime
   end
 
@@ -558,23 +348,23 @@ defmodule DateTime do
     result = 0
 
     if seconds = descriptor[:seconds] || descriptor[:second] do
-      result = result |> Kernel.+ seconds
+      result = result |> K.+ seconds
     end
 
     if minutes = descriptor[:minutes] || descriptor[:minute] do
-      result = result |> Kernel.+ (minutes * 60)
+      result = result |> K.+ (minutes * 60)
     end
 
     if hours = descriptor[:hours] || descriptor[:hour] do
-      result = result |> Kernel.+ (hours * 60 * 60)
+      result = result |> K.+ (hours * 60 * 60)
     end
 
     if days = descriptor[:days] || descriptor[:day] do
-      result = result |> Kernel.+ (days * 24 * 60 * 60)
+      result = result |> K.+ (days * 24 * 60 * 60)
     end
 
     if weeks = descriptor[:weeks] || descriptor[:week] do
-      result = result |> Kernel.+ (weeks * 7 * 24 * 60 * 60)
+      result = result |> K.+ (weeks * 7 * 24 * 60 * 60)
     end
 
     result
@@ -596,19 +386,19 @@ defmodule DateTime do
   end
 
   def a < b do
-    normalize(a) |> Kernel.< normalize(b)
+    normalize(a) |> K.< normalize(b)
   end
 
   def a <= b do
-    normalize(a) |> Kernel.<= normalize(b)
+    normalize(a) |> K.<= normalize(b)
   end
 
   def a > b do
-    normalize(a) |> Kernel.> normalize(b)
+    normalize(a) |> K.> normalize(b)
   end
 
   def a >= b do
-    normalize(a) |> Kernel.>= normalize(b)
+    normalize(a) |> K.>= normalize(b)
   end
 
   defp normalize(value) when value |> is_integer do

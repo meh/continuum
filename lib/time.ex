@@ -127,40 +127,36 @@ defmodule Time do
       |> elem(1)
   end
 
-  defmacro __using__(_opts) do
-    quote do
-      import Time, only: [is_time: 1, is_time: 2]
+  @spec format(t, String.t | list | tuple)           :: String.t
+  @spec format(t, String.t | list | tuple, Format.t) :: String.t
+  def format(date, format, type \\ :php) do
+    DateTime.new({ 1, 1, 0 }, date) |> DateTime.format(format, type)
+  end
+
+  @spec parse(String.t, String.t | list | tuple)           :: { :ok, t } | { :error, term }
+  @spec parse(String.t, String.t | list | tuple, Format.t) :: { :ok, t } | { :error, term }
+  def parse(string, format, type \\ :php) do
+    case DateTime.parse(string, format, type) do
+      { :ok, { datetime, rest } } ->
+        { :ok, { datetime |> DateTime.time, rest } }
+
+      result ->
+        result
     end
   end
 
-  @spec is_time(term) :: boolean
-  defmacro is_time(var) do
-    quote do
-      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
-                                          elem(unquote(var), 1) in 0 .. 59 and
-                                          elem(unquote(var), 2) in 0 .. 59) or
-       (tuple_size(unquote(var)) == 2 and is_binary(elem(unquote(var), 1)) and
-         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) in 0 .. 23 and
-                                                    elem(elem(unquote(var), 0), 1) in 0 .. 59 and
-                                                    elem(elem(unquote(var), 0), 2) in 0 .. 59))
-    end
-  end
+  @spec parse!(String.t, String.t | list | tuple)           :: t | no_return
+  @spec parse!(String.t, String.t | list | tuple, Format.t) :: t | no_return
+  def parse!(string, format, type \\ :php) do
+    case parse(string, format, type) do
+      { :ok, { result, _rest } } ->
+        result
 
-  @spec is_time(term, Timezone.t) :: boolean
-  defmacro is_time(var, zone) when is_binary(zone) do
-    if Timezone.equal? zone, "UTC" do
-      quote do
-        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) in 0 .. 23 and
-                                           elem(unquote(var), 1) in 0 .. 59 and
-                                           elem(unquote(var), 2) in 0 .. 59)
-      end
-    else
-      quote do
-        (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
-          tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) in 0 .. 23 and
-                                                     elem(elem(unquote(var), 0), 1) in 0 .. 59 and
-                                                     elem(elem(unquote(var), 0), 2) in 0 .. 59)
-      end
+      { :error, message } ->
+        raise DateTime.ParseError, message: message
+
+      { result, _rest } ->
+        result
     end
   end
 end
