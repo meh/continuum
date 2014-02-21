@@ -1,4 +1,6 @@
 defmodule Date do
+  use Timezone
+
   @type year    :: non_neg_integer
   @type month   :: 1 .. 12
   @type day     :: 1 .. 31
@@ -8,13 +10,46 @@ defmodule Date do
 
   @type t :: { year, month, day } | { { year, month, day }, Timezone.t }
 
-  @spec valid?(t) :: boolean
-  def valid?({ year, month, day }) do
-    :calendar.valid_date(year, month, day)
+  @doc """
+  Using Date will import the `is_date` guards.
+  """
+  defmacro __using__(_opts) do
+    quote do
+      use Timezone
+
+      import Date, only: [is_date: 1, is_date: 2]
+    end
   end
 
-  def valid?({ { year, month, day }, zone }) do
-    Timezone.exists?(zone) and :calendar.valid_date(year, month, day)
+  @spec is_date(term) :: boolean
+  defmacro is_date(var) do
+    quote do
+      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
+                                          elem(unquote(var), 1) in 1 .. 12 and
+                                          elem(unquote(var), 2) in 1 .. 32) or
+       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
+                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31))
+    end
+  end
+
+  @spec is_date(term, Timezone.t) :: boolean
+  defmacro is_date(var, zone) do
+    if zone |> Timezone.== "UTC" do
+      quote do
+        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
+                                           elem(unquote(var), 1) in 1 .. 12 and
+                                           elem(unquote(var), 2) in 1 .. 32)
+      end
+    else
+      quote do
+       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
+         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
+                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31)
+      end
+    end
   end
 
   @spec now             :: t
@@ -24,16 +59,25 @@ defmodule Date do
   end
 
   @spec year(t) :: year
-  def year({ date, _ }),    do: year(date)
   def year({ year, _, _ }), do: year
+  def year({ { year, _, _ }, _ }), do: year
+
+  @spec year(t, year) :: t
+  def year({ _, month, day }, year), do: { year, month, day }
 
   @spec month(t) :: month
-  def month({ date, _ }),     do: month(date)
   def month({ _, month, _ }), do: month
+  def month({ { _, month, _ }, _ }), do: month
+
+  @spec month(t, month) :: t
+  def month({ year, _, day }, month), do: { year, month, day }
 
   @spec day(t) :: day
-  def day({ date, _ }),   do: day(date)
   def day({ _, _, day }), do: day
+  def day({ { _, _, day }, _ }), do: day
+
+  @spec day(t, day) :: t
+  def day({ year, month, _ }, day), do: { year, month, day }
 
   @spec timezone(t) :: Timezone.t
   def timezone({ _, _, _ }) do
@@ -47,7 +91,7 @@ defmodule Date do
   # TODO: actually do the date change
   @spec timezone(t, Timezone.t) :: t
   def timezone({ date, _old }, new) do
-    if Timezone.equal? new, "UTC" do
+    if new |> Timezone.== "UTC" do
       date
     else
       { new, date }
@@ -55,7 +99,7 @@ defmodule Date do
   end
 
   def timezone(date, new) do
-    if Timezone.equal? new, "UTC" do
+    if new |> Timezone.== "UTC" do
       date
     else
       { date, new }
