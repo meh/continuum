@@ -52,4 +52,9 @@ defmodule DateTimeTest do
     assert ~t"2013-10-23 10:30:15 EST"t == { { 10, 30, 15 }, "EST" }
     assert ~t"2013-10-23 10:30:15 EST"dt == { { { 2013, 10, 23 }, { 10, 30, 15 } }, "EST" }
   end
+
+  test "epoch works" do
+    assert DateTime.to_epoch(DateTime.epoch) == 0
+    assert DateTime.to_epoch(DateTime.epoch |> DateTime.+ seconds: 3) == 3
+  end
 end
