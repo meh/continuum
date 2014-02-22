@@ -327,8 +327,8 @@ defmodule DateTime do
       raise ArgumentError, message: "cannot convert a datetime less than 1970-1-1 00:00:00"
     end
 
-    :calendar.datetime_to_gregorian_seconds(datetime) |> K.-
-      :calendar.datetime_to_gregorian_seconds(epoch)
+    K.-(:calendar.datetime_to_gregorian_seconds(datetime),
+      :calendar.datetime_to_gregorian_seconds(epoch))
   end
 
   @doc """
@@ -336,7 +336,7 @@ defmodule DateTime do
   """
   @spec from_epoch(non_neg_integer) :: t
   def from_epoch(seconds) do
-    (:calendar.datetime_to_gregorian_seconds(DateTime.epoch) |> K.+ seconds)
+    K.+(:calendar.datetime_to_gregorian_seconds(DateTime.epoch), seconds)
       |> :calendar.gregorian_seconds_to_datetime
   end
 
