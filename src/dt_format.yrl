@@ -11,15 +11,18 @@ format ->
   part : [content('$1')].
 
 format ->
-  raw : [content('$1')].
+  raw : [char(content('$1'))].
 
 format ->
   part format : [content('$1') | '$2'].
 
 format ->
-  raw format : [content('$1') | '$2'].
+  raw format : [char(content('$1')) | '$2'].
 
 Erlang code.
 
 content({ _, _, Content }) ->
   Content.
+
+char([Char]) ->
+  << Char/utf8 >>.

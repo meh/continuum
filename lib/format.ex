@@ -1,5 +1,3 @@
-defexception DateTime.ParseError, message: nil
-
 defmodule DateTime.Format do
   @type t :: :php | :icu
 
@@ -22,7 +20,7 @@ defmodule DateTime.Format do
   end
 
   def format(datetime, format) when format |> is_list do
-    format([], datetime, format)
+    Enum.map(format, &format(datetime, &1)) |> iolist_to_binary
   end
 
   def format(datetime, { :day, :number, :padded }) do
@@ -236,16 +234,8 @@ defmodule DateTime.Format do
     datetime |> DateTime.to_epoch |> integer_to_binary
   end
 
-  def format(_, char) when is_integer(char) do
-    [char] |> iolist_to_binary
-  end
-
-  defp format(acc, datetime, [format | rest]) do
-    [format(datetime, format) | acc] |> format(datetime, rest)
-  end
-
-  defp format(acc, _, []) do
-    Enum.reverse(acc) |> iolist_to_binary
+  def format(_datetime, raw) when raw |> is_binary do
+    raw
   end
 
   defp pad(number) when number < 10 do
@@ -258,15 +248,15 @@ defmodule DateTime.Format do
 
   def parse(string, format) when format |> is_list do
     try do
-      result = Enum.reduce format, { { { 1, 1, 0 }, { 0, 0, 0 } }, string }, fn
-        format, { current, rest } ->
+      { acc, rest } = Enum.reduce format, { [], string }, fn
+        format, { acc, rest } ->
           case parse(rest, format) do
             { parsed, rest } ->
-              { into(current, parsed, format), rest }
+              { [parsed | acc], rest }
           end
       end
 
-      { :ok, result }
+      { :ok, { acc |> Enum.reverse, rest } }
     catch
       { :error, reason } ->
         { :error, reason }
@@ -326,12 +316,97 @@ defmodule DateTime.Format do
     end
   end
 
-  @spec into(DateTime.t, term, term) :: DateTime.t
-  def into(result, part, format) when elem(format, 0) == :day do
-    result |> DateTime.date(DateTime.date(result) |> Date.day(part))
+  def parse(string, { :month, :name, :long }) do
+    case String.upcase(string) do
+      "JANUARY" <> _ ->
+        { 1, String.slice(string, 7 .. -1) || "" }
+
+      "FEBRUARY" <> _ ->
+        { 2, String.slice(string, 8 .. -1) || "" }
+
+      "MARCH" <> _ ->
+        { 3, String.slice(string, 5 .. -1) || "" }
+
+      "APRIL" <> _ ->
+        { 4, String.slice(string, 5 .. -1) || "" }
+
+      "MAY" <> _ ->
+        { 5, String.slice(string, 3 .. -1) || "" }
+
+      "JUNE" <> _ ->
+        { 6, String.slice(string, 4 .. -1) || "" }
+
+      "JULY" <> _ ->
+        { 7, String.slice(string, 4 .. -1) || "" }
+
+      "AUGUST" <> _ ->
+        { 8, String.slice(string, 6 .. -1) || "" }
+
+      "SEPTEMBER" <> _ ->
+        { 9, String.slice(string, 9 .. -1) || "" }
+
+      "OCTOBER" <> _ ->
+        { 10, String.slice(string, 7 .. -1) || "" }
+
+      "NOVEMBER" <> _ ->
+        { 11, String.slice(string, 8 .. -1) || "" }
+
+      "DECEMBER" <> _ ->
+        { 12, String.slice(string, 8 .. -1) || "" }
+
+      _ ->
+        throw { :error, "no full month name found" }
+    end
   end
 
-  def into(result, _, { :weekday, _, _ }), do: result
-  def into(result, _, :suffix), do: result
-  def into(result, part, :yearday), do: result
+  def parse(string, { :month, :name, :short }) do
+    part = String.slice(string, 0 .. 2)
+    rest = String.slice(string, 3 .. -1) || ""
+
+    case String.upcase(part) do
+      "JAN" -> { 1, rest }
+      "FEB" -> { 2, rest }
+      "MAR" -> { 3, rest }
+      "APR" -> { 4, rest }
+      "MAY" -> { 5, rest }
+      "JUN" -> { 6, rest }
+      "JUL" -> { 7, rest }
+      "AUG" -> { 8, rest }
+      "SEP" -> { 9, rest }
+      "OCT" -> { 10, rest }
+      "NOV" -> { 11, rest }
+      "DEC" -> { 13, rest }
+
+      _ ->
+        throw { :error, "#{part} is not a weekday name" }
+    end
+  end
+
+  def parse(string, { :year, :number, :short }) do
+    part = String.slice(string, 0 .. 1)
+    rest = String.slice(string, 2 .. -1)
+
+    case Integer.parse(part) do
+      { integer, "" } when integer > 50 ->
+        { 1900 + integer, rest }
+
+      { integer, "" } ->
+        { 2000 + integer, rest }
+
+      _ ->
+        throw { :error, "#{part} is not a short year number" }
+    end
+  end
+
+  def parse(string, raw) when raw |> is_binary do
+    length = String.length(raw)
+    part   = String.slice(string, 0 .. length - 1)
+    rest   = String.slice(string, length .. -1) || ""
+
+    unless part == raw do
+      throw { :error, "could not find raw string" }
+    end
+
+    { nil, rest }
+  end
 end
