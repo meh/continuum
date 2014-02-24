@@ -62,7 +62,7 @@ defmodule DateTime do
   end
 
   defmacro sigil_t({ _, _, [string] }, options) when is_binary(string) do
-    Macro.escape parse(string, options)
+    Macro.escape heuristics(string, options)
   end
 
   defmacro sigil_t(string, options) do
@@ -77,11 +77,11 @@ defmodule DateTime do
   end
 
   defmacro sigil_T({ _, _, [string] }, options) when is_binary(string) do
-    Macro.escape parse(string, options)
+    Macro.escape heuristics(string, options)
   end
 
   @doc false
-  def parse(string, options) do
+  def heuristics(string, options) do
     if string |> is_binary do
       string = String.to_char_list!(string)
     end
@@ -239,77 +239,6 @@ defmodule DateTime do
     false
   end
 
-  @doc """
-  Format the date.
-  """
-  @spec format(t, String.t | list | tuple) :: String.t
-  def format(datetime, format, type \\ :php)
-
-  def format(datetime, format, type) when format |> is_binary do
-    Format.format(datetime, Format.compile(format, type))
-  end
-
-  def format(datetime, format, _type) do
-    Format.format(datetime, format)
-  end
-
-  @spec parse!(String.t, String.t | list | tuple)           :: t | no_return
-  @spec parse!(String.t, String.t | list | tuple, Format.t) :: t | no_return
-  def parse!(string, format, type \\ :php) do
-    case parse(string, format, type) do
-      { :ok, { result, _rest } } ->
-        result
-
-      { :error, message } ->
-        raise DateTime.ParseError, message: message
-
-      { result, _rest } ->
-        result
-    end
-  end
-
-  @spec parse(String.t, String.t | list | tuple)           :: { :ok, t } | { :error, term }
-  @spec parse(String.t, String.t | list | tuple, Format.t) :: { :ok, t } | { :error, term }
-  def parse(string, format, type \\ :php)
-
-  def parse(string, format, type) when format |> is_binary do
-    Format.parse(string, Format.compile(format, type))
-  end
-
-  def parse(string, format, _type) do
-    Format.parse(string, format)
-  end
-
-  @doc """
-  Subtract the descriptor or seconds from the DateTime.
-  """
-  @spec t - (integer | Keyword.t) :: t
-  def datetime - seconds when seconds |> is_integer do
-    zone     = timezone(datetime)
-    datetime = timezone(datetime, "UTC")
-
-    from_seconds(to_seconds(datetime) |> K.- seconds)
-  end
-
-  def datetime - descriptor do
-    datetime - to_seconds(descriptor)
-  end
-
-  @doc """
-  Add the descriptor or seconds to the DateTime.
-  """
-  @spec t + (integer | Keyword.t) :: t
-  def datetime + seconds when seconds |> is_integer do
-    zone     = timezone(datetime)
-    datetime = timezone(datetime, "UTC")
-
-    from_seconds(to_seconds(datetime) |> K.+ seconds)
-  end
-
-  def datetime + descriptor do
-    datetime + to_seconds(descriptor)
-  end
-
   @spec epoch :: t
   def epoch do
     { { 1970, 1, 1 }, { 0, 0, 0 } }
@@ -385,6 +314,36 @@ defmodule DateTime do
     :calendar.gregorian_seconds_to_datetime(seconds)
   end
 
+  @doc """
+  Subtract the descriptor or seconds from the DateTime.
+  """
+  @spec t - (integer | Keyword.t) :: t
+  def datetime - seconds when seconds |> is_integer do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+
+    from_seconds(to_seconds(datetime) |> K.- seconds)
+  end
+
+  def datetime - descriptor do
+    datetime - to_seconds(descriptor)
+  end
+
+  @doc """
+  Add the descriptor or seconds to the DateTime.
+  """
+  @spec t + (integer | Keyword.t) :: t
+  def datetime + seconds when seconds |> is_integer do
+    zone     = timezone(datetime)
+    datetime = timezone(datetime, "UTC")
+
+    from_seconds(to_seconds(datetime) |> K.+ seconds)
+  end
+
+  def datetime + descriptor do
+    datetime + to_seconds(descriptor)
+  end
+
   def a < b do
     normalize(a) |> K.< normalize(b)
   end
@@ -412,4 +371,75 @@ defmodule DateTime do
   defp normalize(value) when value |> is_datetime do
     value
   end
+
+  @doc """
+  Format the date.
+  """
+  @spec format(t, String.t | list | tuple) :: String.t
+  def format(datetime, format, type \\ :php)
+
+  def format(datetime, format, type) when format |> is_binary do
+    format(datetime, Format.compile(format, type), type)
+  end
+
+  def format(datetime, format, _type) do
+    Format.format(datetime, format)
+  end
+
+  defexception ParseError, message: nil
+
+
+  @spec parse!(String.t, String.t | list | tuple)           :: t | no_return
+  @spec parse!(String.t, String.t | list | tuple, Format.t) :: t | no_return
+  def parse!(string, format, type \\ :php) do
+    case parse(string, format, type) do
+      { :ok, { result, _rest } } ->
+        result
+
+      { :error, message } ->
+        raise ParseError, message: message
+
+      { result, _rest } ->
+        result
+    end
+  end
+
+  @spec parse(String.t, String.t | list | tuple)           :: { :ok, t } | { :error, term }
+  @spec parse(String.t, String.t | list | tuple, Format.t) :: { :ok, t } | { :error, term }
+  def parse(string, format, type \\ :php)
+
+  def parse(string, format, type) when format |> is_binary do
+    parse(string, Format.compile(format, type), type)
+  end
+
+  def parse(string, format, _type) when format |> is_list do
+    case Format.parse(string, format) do
+      { :ok, { result, rest } } ->
+        Enum.zip(format, result) |> Enum.reduce { { 1, 1, 0 }, { 0, 0, 0 } }, fn
+          { format, value }, result ->
+            into(result, value, format)
+        end
+
+      { :error, reason } ->
+        { :error, reason }
+    end
+  end
+
+  defp into(result, part, format) when elem(format, 0) == :day do
+    result |> DateTime.date(DateTime.date(result) |> Date.day(part))
+  end
+
+  defp into(result, part, format) when elem(format, 0) == :month do
+    result |> DateTime.date(DateTime.date(result) |> Date.month(part))
+  end
+
+  defp into(result, part, format) when elem(format, 0) == :month do
+    result |> DateTime.date(DateTime.date(result) |> Date.month(part))
+  end
+
+  defp into(result, part, format) when elem(format, 0) == :year do
+    result |> DateTime.date(DateTime.date(result) |> Date.year(part))
+  end
+
+  defp into(result, _, _), do: result
 end
