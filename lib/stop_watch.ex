@@ -19,6 +19,21 @@ defmodule StopWatch do
     def to_integer(Elapsed[microseconds: number]) do
       number
     end
+
+    defimpl Inspect do
+      def inspect(StopWatch.Elapsed[microseconds: mcs], _opts) do
+        cond do
+          mcs >= 1_000_000 ->
+            to_string :io_lib.format("~p seconds", [mcs / 1_000_000])
+
+          mcs >= 1_000 ->
+            to_string :io_lib.format("~p milliseconds", [mcs / 1_000])
+
+          true ->
+            to_string :io_lib.format("~p microseconds", [mcs])
+        end
+      end
+    end
   end
 
   defrecordp :watch, start: nil
@@ -31,20 +46,5 @@ defmodule StopWatch do
     { _, stop_s, stop_m } = :erlang.now
 
     Elapsed.at((stop_s * 1_000_000 + stop_m) - (start_s * 1_000_000 + start_m))
-  end
-end
-
-defimpl Inspect, for: StopWatch.Elapsed do
-  def inspect(StopWatch.Elapsed[microseconds: mcs], _opts) do
-    cond do
-      mcs >= 1_000_000 ->
-        to_string :io_lib.format("~p seconds", [mcs / 1_000_000])
-
-      mcs >= 1_000 ->
-        to_string :io_lib.format("~p milliseconds", [mcs / 1_000])
-
-      true ->
-        to_string :io_lib.format("~p microseconds", [mcs])
-    end
   end
 end
