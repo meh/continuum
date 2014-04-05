@@ -6,8 +6,10 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Timezone.Database do
-  @path Path.join(["..", "..", "priv", "tzdata"]) |> Path.expand(__DIR__)
+defmodule Continuum.Timezone.Database do
+  alias Continuum.Timezone
+
+  @path Path.join(["..", "..", "..", "priv", "tzdata"]) |> Path.expand(__DIR__)
 
   defrecord Zone, name: nil, rules: [] do
     defrecord Rule, format: nil, offset: nil, during: nil, references: nil do

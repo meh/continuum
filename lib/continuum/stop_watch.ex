@@ -6,7 +6,7 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule StopWatch do
+defmodule Continuum.StopWatch do
   defrecord Elapsed, microseconds: nil do
     def at(time) do
       Elapsed[microseconds: time]
@@ -21,6 +21,8 @@ defmodule StopWatch do
     end
 
     defimpl Inspect do
+      use Continuum
+
       def inspect(StopWatch.Elapsed[microseconds: mcs], _opts) do
         cond do
           mcs >= 1_000_000 ->

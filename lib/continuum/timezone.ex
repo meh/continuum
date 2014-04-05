@@ -6,24 +6,26 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Timezone do
+defmodule Continuum.Timezone do
   @type t      :: String.t
   @type offset :: { :+ | :-, Time.t }
+
+  alias Continuum.Timezone.Database
 
   @doc """
   Using Timezone will import the guard clauses.
   """
   defmacro __using__(_opts) do
     quote do
-      import Timezone, only: [is_timezone: 1, is_timezone: 2]
-      require Timezone.Database
+      import Continuum.Timezone, only: [is_timezone: 1, is_timezone: 2]
+      require Continuum.Timezone.Database
     end
   end
 
   @spec is_timezone(term) :: boolean
   defmacro is_timezone(zone) do
     quote do
-      Timezone.Database.contains?(unquote(zone))
+      Database.contains?(unquote(zone))
     end
   end
 
@@ -36,12 +38,12 @@ defmodule Timezone do
     end
   end
 
-  defdelegate exists?(timezone),      to: Timezone.Database
-  defdelegate get(timezone),          to: Timezone.Database
-  defdelegate timezone == other,      to: Timezone.Database, as: :equals?
-  defdelegate link_to(timezone),      to: Timezone.Database
-  defdelegate link?(timezone),        to: Timezone.Database
-  defdelegate synonyms_for(timezone), to: Timezone.Database
+  defdelegate exists?(timezone),      to: Database
+  defdelegate get(timezone),          to: Database
+  defdelegate timezone == other,      to: Database, as: :equals?
+  defdelegate link_to(timezone),      to: Database
+  defdelegate link?(timezone),        to: Database
+  defdelegate synonyms_for(timezone), to: Database
 
   def local do
     now       = :erlang.now

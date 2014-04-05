@@ -6,7 +6,8 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Date do
+defmodule Continuum.Date do
+  use Continuum
   use Timezone
 
   @type year    :: non_neg_integer
@@ -23,22 +24,24 @@ defmodule Date do
   """
   defmacro __using__(_opts) do
     quote do
-      use Timezone
+      use Continuum.Timezone
 
-      import Date, only: [is_date: 1, is_date: 2]
+      import Continuum.Date, only: [is_date: 1, is_date: 2]
     end
   end
 
   @spec is_date(term) :: boolean
   defmacro is_date(var) do
     quote do
-      ((tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
-                                          elem(unquote(var), 1) in 1 .. 12 and
-                                          elem(unquote(var), 2) in 1 .. 32) or
-       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1)) and
-         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
-                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
-                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31))
+      (is_tuple(unquote(var)) and tuple_size(unquote(var)) == 3 and
+        elem(unquote(var), 0) > 0 and
+        elem(unquote(var), 1) in 1 .. 12 and
+        elem(unquote(var), 2) in 1 .. 32) or
+      (is_tuple(unquote(var)) and tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1)) and
+        is_tuple(elem(unquote(var), 0)) and tuple_size(elem(unquote(var), 0)) == 3 and
+          elem(elem(unquote(var), 0), 0) > 0 and
+          elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+          elem(elem(unquote(var), 0), 2) in 1 .. 31)
     end
   end
 
@@ -46,16 +49,18 @@ defmodule Date do
   defmacro is_date(var, zone) do
     if zone |> Timezone.== "UTC" do
       quote do
-        (tuple_size(unquote(var)) == 3 and elem(unquote(var), 0) > 0 and
-                                           elem(unquote(var), 1) in 1 .. 12 and
-                                           elem(unquote(var), 2) in 1 .. 32)
+        is_tuple(unquote(var)) and tuple_size(unquote(var)) == 3 and
+          elem(unquote(var), 0) > 0 and
+          elem(unquote(var), 1) in 1 .. 12 and
+          elem(unquote(var), 2) in 1 .. 32
       end
     else
       quote do
-       (tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
-         tuple_size(elem(unquote(var), 0)) == 3 and elem(elem(unquote(var), 0), 0) > 0 and
-                                                    elem(elem(unquote(var), 0), 1) in 1 .. 12 and
-                                                    elem(elem(unquote(var), 0), 2) in 1 .. 31)
+        is_tuple(unquote(var)) and tuple_size(unquote(var)) == 2 and is_timezone(elem(unquote(var), 1), unquote(zone)) and
+          is_tuple(elem(unquote(var), 0)) and tuple_size(elem(unquote(var), 0)) == 3 and
+            elem(elem(unquote(var), 0), 0) > 0 and
+            elem(elem(unquote(var), 0), 1) in 1 .. 12 and
+            elem(elem(unquote(var), 0), 2) in 1 .. 31
       end
     end
   end

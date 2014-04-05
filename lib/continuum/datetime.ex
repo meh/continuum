@@ -6,11 +6,13 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule DateTime do
+defmodule Continuum.DateTime do
+  use Continuum
   use Date
   use Time
+  use Timezone
 
-  alias DateTime.Format, as: Format
+  alias Continuum.Format
 
   @type t :: { date :: Date.t, time :: Time.t } |
              { timezone :: Timezone.t, { date :: Date.t, time :: Time.t } }
@@ -23,18 +25,19 @@ defmodule DateTime do
   """
   defmacro __using__(_opts) do
     quote do
-      use Date
-      use Time
+      use Continuum.Date
+      use Continuum.Time
 
-      import DateTime, only: [is_datetime: 1, is_datetime: 2, sigil_t: 2, sigil_T: 2]
+      import Continuum.DateTime,
+        only: [is_datetime: 1, is_datetime: 2, sigil_t: 2, sigil_T: 2]
     end
   end
 
   @spec is_datetime(term) :: boolean
   defmacro is_datetime(var) do
     quote do
-      (tuple_size(unquote(var)) == 2 and
-        (is_date(elem(unquote(var), 0)) and is_time(elem(unquote(var), 1))) or
+      is_tuple(unquote(var)) and tuple_size(unquote(var)) == 2 and
+        ((is_date(elem(unquote(var), 0)) and is_time(elem(unquote(var), 1))) or
         (is_timezone(elem(unquote(var), 1)) and
           is_date(elem(elem(unquote(var), 0), 0)) and
           is_time(elem(elem(unquote(var), 0), 1))))
@@ -45,15 +48,15 @@ defmodule DateTime do
   defmacro is_datetime(var, zone) do
     if zone |> Timezone.== "UTC" do
       quote do
-        (tuple_size(unquote(var)) == 2 and
+        is_tuple(unquote(var)) and tuple_size(unquote(var)) == 2 and
           (is_date(elem(unquote(var), 0), unquote(zone)) and
-          is_time(elem(unquote(var), 1), unquote(zone))))
+          is_time(elem(unquote(var), 1), unquote(zone)))
       end
     else
       quote do
-        (is_timezone(elem(unquote(var), 1), unquote(zone)) and
+        is_tuple(unquote(var)) and is_timezone(elem(unquote(var), 1), unquote(zone)) and
           is_date(elem(elem(unquote(var), 0), 0)) and
-          is_time(elem(elem(unquote(var), 0), 1)))
+          is_time(elem(elem(unquote(var), 0), 1))
       end
     end
   end
@@ -281,7 +284,7 @@ defmodule DateTime do
   Convert a DateTime or a descriptor to seconds.
   """
   @spec to_seconds(Keyword.t | t) :: integer
-  def to_seconds(descriptor) when is_list(descriptor) do
+  def to_seconds(descriptor) when descriptor |> is_list do
     result = 0
 
     if seconds = descriptor[:seconds] || descriptor[:second] do

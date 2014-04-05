@@ -2,6 +2,7 @@ Code.require_file "test_helper.exs", __DIR__
 
 defmodule DateTest do
   use ExUnit.Case
+  use Continuum
   use DateTime
 
   test "returns a proper date" do

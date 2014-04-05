@@ -6,7 +6,7 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule DateTime.Format do
+defmodule Continuum.Format do
   @type t :: :php | :icu
 
   def compile(string, type \\ :php) do

@@ -6,10 +6,10 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Timer do
+defmodule Continuum.Timer do
   defmacro __using__(_opts) do
     quote do
-      import Timer, only: [once: 2, every: 2]
+      import Continuum.Timer, only: [once: 2, every: 2]
     end
   end
 
