@@ -94,7 +94,7 @@ defmodule Continuum.DateTime do
   @doc false
   def heuristics(string, options) do
     if string |> is_binary do
-      string = String.to_char_list!(string)
+      string = List.from_char_data!(string)
     end
 
     { :ok, lexed, _  } = :datetime_lexer.string(string)

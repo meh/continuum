@@ -11,7 +11,7 @@ defmodule Continuum.Format do
 
   def compile(string, type \\ :php) do
     if string |> is_binary do
-      string = String.to_char_list!(string)
+      string = List.from_char_data!(string)
     end
 
     { :ok, lexed, _ } = case type do

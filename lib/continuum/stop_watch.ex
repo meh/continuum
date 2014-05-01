@@ -7,23 +7,25 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Continuum.StopWatch do
-  defrecord Elapsed, microseconds: nil do
+  defmodule Elapsed do
+    defstruct microseconds: nil
+
     def at(time) do
-      Elapsed[microseconds: time]
+      %Elapsed{microseconds: time}
     end
 
-    def seconds(Elapsed[microseconds: number]) do
+    def seconds(%Elapsed{microseconds: number}) do
       rem(trunc(number / 1_000_000), 60)
     end
 
-    def to_integer(Elapsed[microseconds: number]) do
+    def to_integer(%Elapsed{microseconds: number}) do
       number
     end
 
     defimpl Inspect do
       use Continuum
 
-      def inspect(StopWatch.Elapsed[microseconds: mcs], _opts) do
+      def inspect(%StopWatch.Elapsed{microseconds: mcs}, _opts) do
         cond do
           mcs >= 1_000_000 ->
             to_string :io_lib.format("~p seconds", [mcs / 1_000_000])

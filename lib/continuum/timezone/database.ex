@@ -6,104 +6,106 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Continuum.Timezone.Database do
-  alias Continuum.Timezone
+alias Continuum.Timezone.Database
 
-  @path Path.join(["..", "..", "..", "priv", "tzdata"]) |> Path.expand(__DIR__)
+defmodule Database.Zone do
+  defstruct name: nil, rules: []
 
-  defrecord Zone, name: nil, rules: [] do
-    defrecord Rule, format: nil, offset: nil, during: nil, references: nil do
-      @moduledoc """
-      Herp derp.
-      """
+  defmodule Rule do
+    defstruct format: nil, offset: nil, during: nil, references: nil
 
-      # TODO: implement this
-      def name_for(date, Rule[format: format]) do
-        format
-      end
+    # TODO: implement this
+    def name_for(date, %Rule{format: format}) do
+      format
     end
-
-    @moduledoc """
-    Herp derp.
-    """
   end
+end
 
-  defrecord Rule, name: nil, for: nil, month: nil, day: nil, time: nil, save: nil, type: nil do
-    @moduledoc """
-    Herp derp.
-    """
+defmodule Database.Rule do
+  defstruct name: nil, for: nil, month: nil, day: nil, time: nil, save: nil, type: nil
 
-    def letter(Rule[type: :standard]),        do: "S"
-    def letter(Rule[type: :daylight_saving]), do: "D"
-    def letter(Rule[type: :war]),             do: "W"
-    def letter(Rule[type: :peace]),           do: "P"
-    def letter(_),                            do: "-"
-  end
+  def letter(%__MODULE__{type: :standard}),        do: "S"
+  def letter(%__MODULE__{type: :daylight_saving}), do: "D"
+  def letter(%__MODULE__{type: :war}),             do: "W"
+  def letter(%__MODULE__{type: :peace}),           do: "P"
+  def letter(_),                                   do: "-"
+end
 
-  defrecord Link, from: nil, to: nil do
-    @moduledoc """
-    Herp depr.
-    """
-  end
+defmodule Database.Link do
+  defstruct from: nil, to: nil
+end
 
-  defrecord Leap, at: nil, correction: nil, type: nil do
-    @moduledoc """
-    Herp derp.
-    """
-  end
+defmodule Database.Leap do
+  defstruct at: nil, correction: nil, type: nil
+end
+
+# FIXME: bug in Elixir?
+defmodule Continuum.Timezone.Database do
+  @path Path.join(["..", "..", "..", "priv", "tzdata"]) |> Path.expand(__DIR__)
 
   Module.register_attribute __MODULE__, :links, accumulate: true
   Module.register_attribute __MODULE__, :zones, accumulate: true
   Module.register_attribute __MODULE__, :rules, accumulate: true
   Module.register_attribute __MODULE__, :leaps, accumulate: true
 
+  require Database.Zone
+  require Database.Zone.Rule
+  require Database.Rule
+  require Database.Leap
+  require Database.Link
+
+  alias Database.Zone
+  alias Database.Rule
+  alias Database.Leap
+  alias Database.Link
+
   Enum.each File.ls!(@path), fn path ->
-    { :ok, lexed, _  } = Path.join(@path, path) |> File.read! |> String.to_char_list! |> :tzdata_lexer.string
+    { :ok, lexed, _  } = Path.join(@path, path) |> File.read! |> List.from_char_data! |> :tzdata_lexer.string
     { :ok, parsed }    = :tzdata_parser.parse(lexed)
 
     Enum.each parsed, fn
       { :link, from, to } ->
-        @links Link.new from: from, to: to
+        @links %Link{from: from, to: to}
 
       { :zone, name, rules } ->
         { rules, _ } = Enum.reduce rules, { [], { :local, {{0,1,1},{0,0,0}} } }, fn
           { offset, rules, format, until }, { result, last } ->
             rules = cond do
-              is_binary(rules) ->
+              rules |> is_binary ->
                 Enum.filter @rules, fn rule ->
                   rule.name == rules
                 end
 
-              is_tuple(rules) ->
+              rules |> is_tuple ->
                 rules
 
               true ->
                 nil
             end
 
-            rule = Zone.Rule.new(format: format, offset: offset, until: until, references: rules)
+            rule = %Zone.Rule{format: format, offset: offset, during: until, references: rules}
 
             { [rule | result], until }
         end
 
-        @zones Zone.new name: name, rules: Enum.reverse(rules)
+        @zones %Zone{name: name, rules: Enum.reverse(rules)}
 
       { :rule, name, for, { month, day, at }, save, type } ->
-        @rules Rule.new name: name, for: for, month: month, day: day, time: at, save: save, type: type
+        @rules %Rule{name: name, for: for, month: month, day: day, time: at, save: save, type: type}
 
       { :leap, at, correction, type } ->
-        @leaps Leap.new at: at, correction: correction, type: type
+        @leaps %Leap{at: at, correction: correction, type: type}
     end
   end
 
-  @names Enum.map(@zones, fn z -> z.name end) ++ Enum.map(@links, fn l -> l.to end)
+  @names Enum.map(@zones, &(&1.name)) ++ Enum.map(@links, &(&1.to))
 
-  @spec names :: [Timezone.t]
+  @spec names :: [Continuum.Timezone.t]
   def names do
     @names
   end
 
-  @spec contains?(Timezone.t) :: boolean
+  @spec contains?(Continuum.Timezone.t) :: boolean
   defmacro contains?(name) do
     quote do
       unquote(name) in unquote(@names)
