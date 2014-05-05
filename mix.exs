@@ -3,7 +3,7 @@ defmodule Continuum.Mixfile do
 
   def project do
     [ app: :continuum,
-      version: "0.0.1",
+      version: "0.1.0-dev",
       elixir: "~> 0.13.0",
       deps: deps ]
   end
