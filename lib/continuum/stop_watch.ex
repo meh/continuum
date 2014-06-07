@@ -40,13 +40,13 @@ defmodule Continuum.StopWatch do
     end
   end
 
-  defrecordp :watch, start: nil
+  defstruct start: nil
 
   def start do
-    watch(start: :erlang.now)
+    %__MODULE__{start: :erlang.now}
   end
 
-  def elapsed(watch(start: { _, start_s, start_m })) do
+  def elapsed(%__MODULE__{start: { _, start_s, start_m }}) do
     { _, stop_s, stop_m } = :erlang.now
 
     Elapsed.at((stop_s * 1_000_000 + stop_m) - (start_s * 1_000_000 + start_m))
