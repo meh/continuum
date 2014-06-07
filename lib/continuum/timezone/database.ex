@@ -60,7 +60,7 @@ defmodule Continuum.Timezone.Database do
   alias Database.Link
 
   Enum.each File.ls!(@path), fn path ->
-    { :ok, lexed, _  } = Path.join(@path, path) |> File.read! |> List.from_char_data! |> :tzdata_lexer.string
+    { :ok, lexed, _  } = Path.join(@path, path) |> File.read! |> String.to_char_list |> :tzdata_lexer.string
     { :ok, parsed }    = :tzdata_parser.parse(lexed)
 
     Enum.each parsed, fn
