@@ -11,7 +11,7 @@ defmodule Continuum.Format do
 
   def compile(string, type \\ :php) do
     if string |> is_binary do
-      string = List.from_char_data!(string)
+      string = String.to_char_list(string)
     end
 
     { :ok, lexed, _ } = case type do
@@ -28,7 +28,7 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, format) when format |> is_list do
-    Enum.map(format, &format(datetime, &1)) |> iolist_to_binary
+    Enum.map(format, &format(datetime, &1)) |> IO.chardata_to_string
   end
 
   def format(datetime, { :day, :number, :padded }) do
