@@ -48,7 +48,7 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, { :day, :number }) do
-    datetime |> DateTime.date |> Date.day |> integer_to_binary
+    datetime |> DateTime.date |> Date.day |> Integer.to_string
   end
 
   def format(datetime, { :weekday, :name, :long }) do
@@ -64,7 +64,7 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, { :weekday, :number, :iso8601 }) do
-    datetime |> DateTime.date |> Date.day_of_the_week |> integer_to_binary
+    datetime |> DateTime.date |> Date.day_of_the_week |> Integer.to_string
   end
 
   def format(datetime, :suffix) do
@@ -79,16 +79,16 @@ defmodule Continuum.Format do
   def format(datetime, { :weekday, :number }) do
     case datetime |> DateTime.date |> Date.day_of_the_week do
       7 -> "0"
-      n -> integer_to_binary(n)
+      n -> Integer.to_string(n)
     end
   end
 
   def format(datetime, :yearday) do
-    datetime |> DateTime.date |> Date.day_of_the_year |> integer_to_binary
+    datetime |> DateTime.date |> Date.day_of_the_year |> Integer.to_string
   end
 
   def format(datetime, { :week, :number, :iso8601 }) do
-    datetime |> DateTime.date |> Date.week_number |> integer_to_binary
+    datetime |> DateTime.date |> Date.week_number |> Integer.to_string
   end
 
   def format(datetime, { :month, :name, :long }) do
@@ -130,11 +130,11 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, { :month, :number }) do
-    datetime |> DateTime.date |> Date.month |> integer_to_binary
+    datetime |> DateTime.date |> Date.month |> Integer.to_string
   end
 
   def format(datetime, { :month, :days }) do
-    datetime |> DateTime.date |> Date.month_days |> integer_to_binary
+    datetime |> DateTime.date |> Date.month_days |> Integer.to_string
   end
 
   def format(datetime, { :year, :leap }) do
@@ -145,15 +145,15 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, { :year, :number, :iso8601 }) do
-    datetime |> DateTime.date |> Date.year |> integer_to_binary
+    datetime |> DateTime.date |> Date.year |> Integer.to_string
   end
 
   def format(datetime, { :year, :number, :long }) do
-    datetime |> DateTime.date |> Date.year |> integer_to_binary
+    datetime |> DateTime.date |> Date.year |> Integer.to_string
   end
 
   def format(datetime, { :year, :number, :short }) do
-    datetime |> DateTime.date |> Date.year |> rem(100) |> integer_to_binary
+    datetime |> DateTime.date |> Date.year |> rem(100) |> Integer.to_string
   end
 
   def format(datetime, { :noon, :lowercase }) do
@@ -171,11 +171,11 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, { :hour, 12 }) do
-    datetime |> DateTime.time |> Time.hour |> rem(12) |> integer_to_binary
+    datetime |> DateTime.time |> Time.hour |> rem(12) |> Integer.to_string
   end
 
   def format(datetime, { :hour, 24 }) do
-    datetime |> DateTime.time |> Time.hour |> integer_to_binary
+    datetime |> DateTime.time |> Time.hour |> Integer.to_string
   end
 
   def format(datetime, { :hour, 12, :padded }) do
@@ -208,14 +208,14 @@ defmodule Continuum.Format do
   def format(datetime, { :offset, :short }) do
     case Timezone.offset("UTC", datetime) do
       { sign, { hours, minutes, _ } } ->
-        atom_to_binary(sign) <> (hours |> pad) <> (minutes |> pad)
+        Atom.to_string(sign) <> (hours |> pad) <> (minutes |> pad)
     end
   end
 
   def format(datetime, { :offset, :long }) do
     case Timezone.offset("UTC", datetime) do
       { sign, { hours, minutes, _ } } ->
-        atom_to_binary(sign) <> (hours |> pad) <> ":" <>  (minutes |> pad)
+        Atom.to_string(sign) <> (hours |> pad) <> ":" <>  (minutes |> pad)
     end
   end
 
@@ -226,7 +226,7 @@ defmodule Continuum.Format do
   def format(datetime, { :offset, :seconds }) do
     case Timezone.offset("UTC", datetime) do
       { sign, time } ->
-        atom_to_binary(sign) <> (Time.to_seconds(time) |> integer_to_binary)
+        Atom.to_string(sign) <> (Time.to_seconds(time) |> Integer.to_string)
     end
   end
 
@@ -239,7 +239,7 @@ defmodule Continuum.Format do
   end
 
   def format(datetime, :epoch) do
-    datetime |> DateTime.to_epoch |> integer_to_binary
+    datetime |> DateTime.to_epoch |> Integer.to_string
   end
 
   def format(_datetime, raw) when raw |> is_binary do
@@ -247,11 +247,11 @@ defmodule Continuum.Format do
   end
 
   defp pad(number) when number < 10 do
-    "0" <> integer_to_binary(number)
+    "0" <> Integer.to_string(number)
   end
 
   defp pad(number) do
-    integer_to_binary(number)
+    Integer.to_string(number)
   end
 
   def parse(string, format) when format |> is_list do
