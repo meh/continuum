@@ -78,7 +78,7 @@ defmodule Continuum.DateTime do
 
   defmacro sigil_t(string, options) do
     quote do
-      DateTime.parse(unquote(string), unquote(options))
+      unquote(__MODULE__).heuristics(unquote(string), unquote(options))
     end
   end
 
