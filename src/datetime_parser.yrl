@@ -68,7 +68,7 @@ date ->
 
 date ->
   number slash number slash number :
-    { content('$5'), content('$3'), content('$1') }.
+    consider_date({ content('$1'), content('$3'), content('$5') }).
 
 time_noon ->
   time noon : parse_time(content('$1'), content('$2')).
@@ -119,7 +119,7 @@ parse_time(Time, 'after') ->
       { Hour + 12, Minute, Second }
   end.
 
-consider_date({ A, Month, B }) when B > 31 ->
-  { B, Month, A };
+consider_date({ A, B, C }) when B > 12 andalso C > 31 ->
+  { C, A, B };
 consider_date(Date) ->
   Date.
